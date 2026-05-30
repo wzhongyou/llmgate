@@ -51,6 +51,12 @@ type geminiPart struct {
 	Text             string                 `json:"text,omitempty"`
 	FunctionCall     *geminiFunctionCall    `json:"functionCall,omitempty"`
 	FunctionResponse *geminiFuncResponse    `json:"functionResponse,omitempty"`
+	InlineData       *geminiInlineData      `json:"inlineData,omitempty"`
+}
+
+type geminiInlineData struct {
+	MimeType string `json:"mimeType"`
+	Data     string `json:"data"`
 }
 
 type geminiFunctionCall struct {
@@ -111,13 +117,61 @@ func geminiMessages(req *core.ChatRequest) []geminiContent {
 			if role == "assistant" {
 				role = "model"
 			}
-			contents = append(contents, geminiContent{
-				Parts: []geminiPart{{Text: m.Content}},
-				Role:  role,
-			})
+			if len(m.ContentParts) > 0 {
+				var parts []geminiPart
+				for _, p := range m.ContentParts {
+					switch p.Type {
+					case "text":
+						parts = append(parts, geminiPart{Text: p.Text})
+					case "image_url":
+						if p.ImageURL != nil {
+							parts = append(parts, geminiPart{
+								InlineData: &geminiInlineData{
+									MimeType: guessImageMime(p.ImageURL.URL),
+									Data:     extractBase64(p.ImageURL.URL),
+								},
+							})
+						}
+					}
+				}
+				contents = append(contents, geminiContent{Parts: parts, Role: role})
+			} else {
+				contents = append(contents, geminiContent{
+					Parts: []geminiPart{{Text: m.Content}},
+					Role:  role,
+				})
+			}
 		}
 	}
 	return contents
+}
+
+func guessImageMime(url string) string {
+	if strings.HasPrefix(url, "data:") {
+		if i := strings.Index(url, ";"); i > 5 {
+			return url[5:i]
+		}
+	}
+	lower := strings.ToLower(url)
+	switch {
+	case strings.HasSuffix(lower, ".png"):
+		return "image/png"
+	case strings.HasSuffix(lower, ".gif"):
+		return "image/gif"
+	case strings.HasSuffix(lower, ".webp"):
+		return "image/webp"
+	default:
+		return "image/jpeg"
+	}
+}
+
+func extractBase64(url string) string {
+	if strings.HasPrefix(url, "data:") {
+		if i := strings.Index(url, ","); i >= 0 {
+			return url[i+1:]
+		}
+	}
+	return url
 }
 
 // geminiTools converts Tool definitions to Gemini's functionDeclarations format.
@@ -160,6 +214,29 @@ func (p *Provider) Chat(ctx context.Context, req *core.ChatRequest) (*core.ChatR
 	}
 	if req.Temperature != nil {
 		generationConfig["temperature"] = *req.Temperature
+	}
+	if req.TopP != nil {
+		generationConfig["topP"] = *req.TopP
+	}
+	if len(req.Stop) > 0 {
+		generationConfig["stopSequences"] = req.Stop
+	}
+	if req.FrequencyPenalty != nil {
+		generationConfig["frequencyPenalty"] = *req.FrequencyPenalty
+	}
+	if req.PresencePenalty != nil {
+		generationConfig["presencePenalty"] = *req.PresencePenalty
+	}
+	if req.Seed != nil {
+		generationConfig["seed"] = *req.Seed
+	}
+	if req.ResponseFormat != nil {
+		if req.ResponseFormat.Type == "json_object" || req.ResponseFormat.Type == "json_schema" {
+			generationConfig["responseMimeType"] = "application/json"
+		}
+		if req.ResponseFormat.Type == "json_schema" && req.ResponseFormat.JSONSchema != nil {
+			generationConfig["responseSchema"] = req.ResponseFormat.JSONSchema
+		}
 	}
 	if len(generationConfig) > 0 {
 		body["generationConfig"] = generationConfig
@@ -283,6 +360,29 @@ func (p *Provider) ChatStream(ctx context.Context, req *core.ChatRequest) (<-cha
 	}
 	if req.Temperature != nil {
 		generationConfig["temperature"] = *req.Temperature
+	}
+	if req.TopP != nil {
+		generationConfig["topP"] = *req.TopP
+	}
+	if len(req.Stop) > 0 {
+		generationConfig["stopSequences"] = req.Stop
+	}
+	if req.FrequencyPenalty != nil {
+		generationConfig["frequencyPenalty"] = *req.FrequencyPenalty
+	}
+	if req.PresencePenalty != nil {
+		generationConfig["presencePenalty"] = *req.PresencePenalty
+	}
+	if req.Seed != nil {
+		generationConfig["seed"] = *req.Seed
+	}
+	if req.ResponseFormat != nil {
+		if req.ResponseFormat.Type == "json_object" || req.ResponseFormat.Type == "json_schema" {
+			generationConfig["responseMimeType"] = "application/json"
+		}
+		if req.ResponseFormat.Type == "json_schema" && req.ResponseFormat.JSONSchema != nil {
+			generationConfig["responseSchema"] = req.ResponseFormat.JSONSchema
+		}
 	}
 	if len(generationConfig) > 0 {
 		body["generationConfig"] = generationConfig

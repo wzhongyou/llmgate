@@ -25,23 +25,46 @@ type FunctionCall struct {
 }
 
 type ChatRequest struct {
-	Messages     []Message
-	Model        string
-	System       string
-	Temperature  *float64
-	MaxTokens    *int
-	Stream       bool
-	Tools        []Tool      `json:"tools,omitempty"`
-	ToolChoice   interface{} `json:"tool_choice,omitempty"`
-	ThinkingType string      `json:"thinking_type,omitempty"` // "disabled" to disable reasoning
+	Messages         []Message       `json:"messages"`
+	Model            string          `json:"model,omitempty"`
+	System           string          `json:"system,omitempty"`
+	Temperature      *float64        `json:"temperature,omitempty"`
+	MaxTokens        *int            `json:"max_tokens,omitempty"`
+	TopP             *float64        `json:"top_p,omitempty"`
+	Stop             []string        `json:"stop,omitempty"`
+	FrequencyPenalty *float64        `json:"frequency_penalty,omitempty"`
+	PresencePenalty  *float64        `json:"presence_penalty,omitempty"`
+	Seed             *int            `json:"seed,omitempty"`
+	Stream           bool            `json:"stream,omitempty"`
+	Tools            []Tool          `json:"tools,omitempty"`
+	ToolChoice       interface{}     `json:"tool_choice,omitempty"`
+	ResponseFormat   *ResponseFormat `json:"response_format,omitempty"`
+	ThinkingType     string          `json:"thinking_type,omitempty"`
+}
+
+type ResponseFormat struct {
+	Type       string      `json:"type"`
+	JSONSchema interface{} `json:"json_schema,omitempty"`
 }
 
 type Message struct {
-	Role             string     `json:"role"`
-	Content          string     `json:"content,omitempty"`
-	ToolCalls        []ToolCall `json:"tool_calls,omitempty"`
-	ToolCallID       string     `json:"tool_call_id,omitempty"`
-	ReasoningContent string     `json:"reasoning_content,omitempty"`
+	Role             string        `json:"role"`
+	Content          string        `json:"content,omitempty"`
+	ContentParts     []ContentPart `json:"content_parts,omitempty"`
+	ToolCalls        []ToolCall    `json:"tool_calls,omitempty"`
+	ToolCallID       string        `json:"tool_call_id,omitempty"`
+	ReasoningContent string        `json:"reasoning_content,omitempty"`
+}
+
+type ContentPart struct {
+	Type     string    `json:"type"`
+	Text     string    `json:"text,omitempty"`
+	ImageURL *ImageURL `json:"image_url,omitempty"`
+}
+
+type ImageURL struct {
+	URL    string `json:"url"`
+	Detail string `json:"detail,omitempty"`
 }
 
 type ChatResponse struct {

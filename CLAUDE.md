@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-AI assistant context for this project. Architecture, API, provider adapter guide, and console design are in [docs/design.md](docs/design.md).
+AI assistant context for this project. Architecture, API, provider adapter guide, and console design are in [docs/llmgate-design.md](docs/llmgate-design.md).
 
 ---
 
@@ -58,7 +58,7 @@ Config for tests: copy `llmgate.toml.example` → `llmgate.toml` and fill in key
 
 Reference for OpenAI-compatible APIs: add one entry to the `builtins` table in [core/providers/openaicompat/builtins.go](core/providers/openaicompat/builtins.go).  
 Reference for custom API format: [core/providers/anthropic/anthropic.go](core/providers/anthropic/anthropic.go) or [core/providers/gemini/gemini.go](core/providers/gemini/gemini.go).  
-Full checklist in [docs/design.md](docs/design.md) — Adding a Provider section.
+Full checklist in [docs/llmgate-design.md](docs/llmgate-design.md) — Adding a Provider section.
 
 ---
 

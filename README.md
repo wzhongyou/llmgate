@@ -1,72 +1,72 @@
 # llmgate
 
-> **High-performance LLM gateway for Go agents** — unified API for 20+ providers, function calling, traffic control, auto-fallback & agent debugging.
+> **高性能 LLM 网关，专为 Go 智能体打造** — 统一 API 接入 20+ 模型供应商，函数调用、流量控制、自动降级、智能体调试一站解决。
 
 [![Go Version](https://img.shields.io/badge/go-%3E%3D1.21-blue)](https://golang.org/)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
-[中文文档](README_zh.md) · [Design Doc](docs/design.md) · [Contributing](CONTRIBUTING.md)
+[快速开始](#快速开始) · [SDK API](#api) · [网关部署](#server-模式) · [控制台](#控制台) · [设计文档](docs/llmgate-design.md)
 
 ```go
-// ❌ Without llmgate: every provider has its own SDK, switching models means rewriting integration code
+// ❌ 没有 llmgate：每家 SDK 不同，切换模型 = 到处改集成代码
 resp, _ := deepseek.Chat(ctx, "sk-xxx", deepseekReq)
-// → change to Claude? now you need anthropic.Messages(...) with a different payload format
+// → 换成 Claude？得换成 anthropic.Messages(...)，请求格式全变
 
-// ✅ With llmgate: one API, any model, auto-fallback, built-in metrics
+// ✅ 有 llmgate：一套 API，任意模型，自动降级，内置指标
 gw, _ := llmgate.NewFromFile("llmgate.toml")
-reply, _ := gw.With("claude").Chat(ctx, req)         // switch with one string
-reply, _ := gw.Fallback("claude", "deepseek").Chat(ctx, req) // auto fallback
-snap := gw.Snapshot()                                  // per-provider latency & tokens
+reply, _ := gw.With("claude").Chat(ctx, req)         // 切换只需改一个字符串
+reply, _ := gw.Fallback("claude", "deepseek").Chat(ctx, req) // 自动降级
+snap := gw.Snapshot()                                  // 各 provider 延迟及 token 统计
 ```
 
 ---
 
-## What is this
+## 这是什么
 
-You're building agent applications and need to integrate multiple LLMs. Three real problems:
+你在构建智能体应用，需要接入多个大模型。三个真实问题：
 
-- **Switching models requires code changes** — every provider has a different API, business logic gets coupled to models
-- **When things go wrong, you don't know why** — is the model slow? Rate limited? Token budget exceeded?
-- **Token usage is opaque** — mixing multiple providers, input/output/reasoning breakdowns don't add up
+- **换模型要改代码** — 每家 API 格式不同，业务逻辑和模型耦合
+- **出了问题不知道为什么** — 是模型慢？被限速？还是 token 超出预算？
+- **Token 用量不透明** — 多个 provider 混用，输入/输出/推理 token 各自消耗对不上
 
-**llmgate** addresses this: a unified interface that hides provider differences, white-box logging of provider / model / token breakdown / latency on every call, built-in fallback and latency-limit strategies, laying the groundwork for visual monitoring.
+**llmgate** 的做法：统一接口屏蔽差异，每次调用白盒记录 provider / 模型 / token 明细 / 延迟，内置降级和延迟限制策略，为可视化监控铺路。
 
-**Three usage modes — pick what fits:**
+**三种使用形态，按需选择：**
 
-| Mode | Use case |
+| 形态 | 适用场景 |
 |------|----------|
-| **SDK** | Import directly in Go projects, integrate multiple models in one line |
-| **Gateway** | Deploy as a standalone HTTP service, works with any language |
-| **Studio** | Visual console — channel management, chat playground, mock stubs, request debugging |
+| **SDK** | Go 项目直接引入，一行代码接入多个模型 |
+| **Gateway** | 独立部署 HTTP 服务，非 Go 项目也能接入 |
+| **Studio** | 可视化控制台，渠道管理 / 对话调试 / Mock 桩 / 请求记录一屏看清 |
 
-### Key features
+### 核心亮点
 
-- **Function calling (Tool Use) across all protocols** — unified `Tool`/`ToolCall` types work with OpenAI, Anthropic, and Gemini. Ready for ReAct agents and ToolNode workflows.
-- **Data-driven provider architecture** — 19 provider packages replaced by a single `builtins` table. Adding a new OpenAI-compatible provider takes one data row, not a new source file.
-- **Zero-code custom providers** — `protocol = "openai-compat"` in config lets you add any OpenAI-compatible API without writing Go code.
+- **函数调用（Tool Use）全协议支持** — 统一的 `Tool`/`ToolCall` 类型同时适配 OpenAI、Anthropic、Gemini 三套协议，为 ReAct 智能体和 ToolNode 工作流做好准备。
+- **数据驱动的供应商架构** — 19 个独立 provider 包精简为一张 `builtins` 表。新增 OpenAI 兼容供应商只需一行数据，无需编写 Go 代码。
+- **零代码自定义接入** — 配置文件中 `protocol = "openai-compat"` 即可接入任意 OpenAI 兼容 API，完全不用写代码。
 
 ---
 
-## Quick Start
+## 快速开始
 
 ```bash
 go get github.com/wzhongyou/llmgate
 ```
 
-**Pick one of three ways to configure:**
+**三种配置方式任选其一：**
 
-**Option 1 — Config file (recommended)**
+**方式一 — 配置文件（推荐）**
 
 ```bash
 cp llmgate.toml.example llmgate.toml
-# edit the key field
+# 编辑 key 字段
 ```
 
 ```go
 gw, err := llmgate.NewFromFile("llmgate.toml")
 ```
 
-**Option 2 — Environment variable**
+**方式二 — 环境变量**
 
 ```bash
 export DEEPSEEK_KEY="sk-xxx"
@@ -74,17 +74,17 @@ export GLM_KEY="your-glm-key"
 ```
 
 ```go
-gw := llmgate.New()  // auto-loads from env vars
+gw := llmgate.New()  // 自动从环境变量加载
 ```
 
-**Option 3 — Code**
+**方式三 — 代码**
 
 ```go
 gw := llmgate.New()
 gw.Use("deepseek", "sk-xxx")
 ```
 
-**Then use it:**
+**开始使用：**
 
 ```go
 package main
@@ -106,7 +106,7 @@ func main() {
     ctx := context.Background()
     reply, err := gw.Chat(ctx, &llmgate.ChatRequest{
         Messages: []llmgate.Message{
-            {Role: "user", Content: "Write a Go HTTP server"},
+            {Role: "user", Content: "帮我写一个 Go HTTP server"},
         },
     })
     if err != nil {
@@ -123,33 +123,33 @@ func main() {
 ```go
 gw := llmgate.New()
 
-// Register providers
+// 注册 provider
 gw.Use("deepseek", "sk-xxx")
 gw.Use("anthropic", "sk-xxx")
 
-// Pin to a provider
+// 指定 provider
 reply, _ := gw.With("anthropic").Chat(ctx, req)
 
-// Fallback chain
+// 降级链
 reply, _ := gw.Fallback("anthropic", "deepseek").Chat(ctx, req)
 
-// Streaming (SSE)
+// 流式输出（SSE）
 ch, err := gw.ChatStream(ctx, &llmgate.ChatRequest{
-    Messages: []llmgate.Message{{Role: "user", Content: "Hello"}},
+    Messages: []llmgate.Message{{Role: "user", Content: "你好"}},
 })
 for chunk := range ch {
     if chunk.Error != nil { break }
     fmt.Print(chunk.Content)
 }
 
-// Function calling (tool use)
+// 函数调用（Function Calling / Tool Use）
 reply, _ := gw.Chat(ctx, &llmgate.ChatRequest{
-    Messages: []llmgate.Message{{Role: "user", Content: "What's the weather in Beijing?"}},
+    Messages: []llmgate.Message{{Role: "user", Content: "北京今天天气怎么样？"}},
     Tools: []llmgate.Tool{{
         Type: "function",
         Function: llmgate.ToolFunction{
             Name:        "get_weather",
-            Description: "Get current weather for a city",
+            Description: "获取指定城市的当前天气",
             Parameters: map[string]interface{}{
                 "type": "object",
                 "properties": map[string]interface{}{
@@ -161,17 +161,17 @@ reply, _ := gw.Chat(ctx, &llmgate.ChatRequest{
     }},
     ToolChoice: "auto",
 })
-// reply.ToolCalls contains the model's tool invocation
+// reply.ToolCalls 包含模型决定调用的工具
 // reply.FinishReason == "tool_calls"
 
-// Metrics
+// 指标
 snap := gw.Snapshot()
-fmt.Printf("DeepSeek latency: %.2f ms\n", snap.Providers["deepseek"].AvgLatencyMs)
+fmt.Printf("DeepSeek 延迟: %.2f ms\n", snap.Providers["deepseek"].AvgLatencyMs)
 ```
 
-## Console
+## 控制台
 
-A developer-focused web console is embedded in the gateway binary. Set `admin_token` to enable it:
+网关二进制内嵌了开发者控制台。配置 `admin_token` 即可启用：
 
 ```toml
 [server]
@@ -181,35 +181,35 @@ admin_token = "your-secret"
 
 ```bash
 go run ./examples/server
-# Open http://localhost:8080/admin/
+# 浏览器打开 http://localhost:8080/admin/
 ```
 
-**Four pages for the development workflow:**
+**四大页面覆盖开发全流程：**
 
-| Page | Purpose |
-|------|---------|
-| **Channels** | Visual provider CRUD — add/edit/test providers, view status and latency |
-| **Playground** | Interactive chat testing — select provider/model, view streaming output, token usage, latency |
-| **Mock** | Mock response stubs — simulate 429/500/timeout/empty responses for testing error handling |
-| **Recent** | Last 200 requests — full request/response inspection, auto-refreshes every 5s |
+| 页面 | 用途 |
+|------|------|
+| **Channels（渠道）** | 可视化管理 provider — 增/删/改/测，查看状态和延迟 |
+| **Playground（调试）** | 交互式测试 — 选模型、看流式输出、Token 用量、延迟 |
+| **Mock（桩）** | 模拟返回 — 模拟 429/500/超时/空响应，测试异常处理 |
+| **Recent（记录）** | 最近 200 条请求 — 完整输入输出查看，每 5s 自动刷新 |
 
-The mock provider registers as `"mock"` on the engine. Select it in Playground to test against your mock rules.
+Mock provider 以 `"mock"` 名称注册在引擎上，在 Playground 中选择即可验证规则。
 
-See [design.md](docs/design.md#console) for the technical design.
-
----
-
-**Precedence (highest to lowest):**
-1. `.Fallback(...)` — explicit in-code chain
-2. `.With(...)` — pin to a provider
-3. `UseStrategy(...)` — custom strategy
-4. Auto-detect (llmgate.toml → env vars → code)
+详见 [llmgate-design.md](docs/llmgate-design.md#console)。
 
 ---
 
-## Server Mode
+**优先级（从高到低）：**
+1. `.Fallback(...)` — 代码中显式指定降级链
+2. `.With(...)` — 固定使用某个 provider
+3. `UseStrategy(...)` — 自定义策略
+4. 自动检测（llmgate.toml → 环境变量 → 代码）
 
-Standalone HTTP server for multi-language access:
+---
+
+## Server 模式
+
+独立部署 HTTP 服务，多语言接入：
 
 ```bash
 cp llmgate.toml.example llmgate.toml
@@ -233,21 +233,21 @@ latency_threshold_ms = 5000
 
 [server]
 listen_addr = ":8080"
-admin_token = "your-secret"   # enables the web console at /admin/
+admin_token = "your-secret"   # 启用 /admin/ 控制台
 ```
 
-Endpoints:
-- `POST /v1/chat` — chat completion (supports function calling; optional `?provider=` / `?fallback=` query params)
-- `GET /v1/models` — list available models
-- `GET /health` — health check
-- `GET /metrics` — Prometheus metrics
-- `GET /admin/` — web console (when `admin_token` is set)
+接口：
+- `POST /v1/chat` — 对话，支持函数调用（可选 `?provider=` / `?fallback=` 查询参数）
+- `GET /v1/models` — 可用模型列表
+- `GET /health` — 健康检查
+- `GET /metrics` — Prometheus 指标
+- `GET /admin/` — 可视化控制台（需配置 `admin_token`）
 
 ---
 
-## Observability
+## 可观测性
 
-Every `/v1/chat` request emits one structured JSON log line:
+每次 `/v1/chat` 请求输出一条结构化 JSON 日志：
 
 ```json
 {"time":"...","level":"INFO","msg":"request",
@@ -257,7 +257,7 @@ Every `/v1/chat` request emits one structured JSON log line:
  "input_tokens":15,"output_tokens":42,"reasoning_tokens":0}
 ```
 
-Inject a custom logger:
+注入自定义 logger：
 
 ```go
 logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
@@ -266,35 +266,35 @@ srv, _ := server.New(cfg, server.WithLogger(logger))
 
 ---
 
-## Supported Providers
+## 支持的供应商
 
-| Provider | Protocol | Default Model |
-|----------|----------|---------------|
+| 供应商 | 协议 | 默认模型 |
+|--------|------|----------|
 | Anthropic (Claude) | Anthropic Messages API | `claude-sonnet-4-6` |
-| Baichuan | OpenAI-compatible | `Baichuan4` |
-| Baidu (ERNIE) | OpenAI-compatible | `ernie-5.1` |
-| ByteDance (Doubao) | OpenAI-compatible | `doubao-seed-1.6-250615` |
-| DeepSeek | OpenAI-compatible | `deepseek-v4-flash` |
+| 百川（Baichuan） | OpenAI 兼容 | `Baichuan4` |
+| 百度（文心 ERNIE） | OpenAI 兼容 | `ernie-5.1` |
+| 字节跳动（豆包） | OpenAI 兼容 | `doubao-seed-1.6-250615` |
+| DeepSeek | OpenAI 兼容 | `deepseek-v4-flash` |
 | Google (Gemini) | Gemini generateContent | `gemini-3.1-flash` |
-| Groq | OpenAI-compatible | `llama-3.3-70b-versatile` |
-| Meta (Llama) | OpenAI-compatible | `llama-4-maverick` |
-| MiniMax | OpenAI-compatible | `MiniMax-M2.7` |
-| Mistral | OpenAI-compatible | `mistral-large-latest` |
-| Moonshot (Kimi) | OpenAI-compatible | `kimi-k2.6` |
-| OpenAI | OpenAI-compatible | `gpt-5.5` |
-| Qwen (Alibaba Bailian) | OpenAI-compatible | `qwen3.6-plus` |
-| SiliconFlow | OpenAI-compatible | `Qwen/Qwen2.5-72B-Instruct` |
-| StepFun | OpenAI-compatible | `step-3.5-flash` |
-| Tencent (Hunyuan) | OpenAI-compatible | `hy3-preview` |
-| Together AI | OpenAI-compatible | `meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo` |
-| xAI (Grok) | OpenAI-compatible | `grok-4.1-fast-non-reasoning` |
-| Xiaomi (MiMo) | OpenAI-compatible | `mimo-v2-pro` |
-| Yi (01.AI) | OpenAI-compatible | `yi-large` |
-| Zhipu (GLM) | OpenAI-compatible | `glm-5.1` |
+| Groq | OpenAI 兼容 | `llama-3.3-70b-versatile` |
+| Meta (Llama) | OpenAI 兼容 | `llama-4-maverick` |
+| MiniMax | OpenAI 兼容 | `MiniMax-M2.7` |
+| Mistral | OpenAI 兼容 | `mistral-large-latest` |
+| 月之暗面（Kimi） | OpenAI 兼容 | `kimi-k2.6` |
+| OpenAI | OpenAI 兼容 | `gpt-5.5` |
+| 阿里百炼（通义千问） | OpenAI 兼容 | `qwen3.6-plus` |
+| SiliconFlow | OpenAI 兼容 | `Qwen/Qwen2.5-72B-Instruct` |
+| 阶跃星辰（StepFun） | OpenAI 兼容 | `step-3.5-flash` |
+| 腾讯（混元） | OpenAI 兼容 | `hy3-preview` |
+| Together AI | OpenAI 兼容 | `meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo` |
+| xAI (Grok) | OpenAI 兼容 | `grok-4.1-fast-non-reasoning` |
+| 小米（MiMo） | OpenAI 兼容 | `mimo-v2-pro` |
+| 零一万物（Yi） | OpenAI 兼容 | `yi-large` |
+| 智谱（GLM） | OpenAI 兼容 | `glm-5.1` |
 
-**3 protocol families**: OpenAI-compatible (19 providers), Anthropic Messages, Gemini generateContent.
+**3 套协议**：OpenAI 兼容（19 家）、Anthropic Messages、Gemini generateContent。
 
-All providers support `base_url` override. To add any other OpenAI-compatible provider without writing code, use `protocol = "openai-compat"` in config:
+所有供应商均支持 `base_url` 覆盖。无需写代码即可接入任意 OpenAI 兼容的供应商：
 
 ```toml
 [[providers]]
@@ -306,54 +306,54 @@ protocol = "openai-compat"
 
 ---
 
-## Project Structure
+## 项目结构
 
 ```
 llmgate/
-├── core/                 # Provider interface, engine, strategies, metrics
+├── core/                 # Provider 接口、引擎、策略、指标
 │   └── providers/
-│       ├── openaicompat/ # All 19 OpenAI-compatible providers (data-driven)
+│       ├── openaicompat/ # 全部 19 个 OpenAI 兼容 provider（数据驱动）
 │       ├── anthropic/    # Anthropic Messages API
 │       └── gemini/       # Gemini generateContent API
 ├── sdk/                  # Go SDK
-├── server/               # HTTP server
-├── console/              # Web console (embedded)
-├── docs/                 # Design docs
-└── examples/             # Usage examples
+├── server/               # HTTP 服务
+├── docs/                 # llmgate 设计（类型、协议、SDK、网关、扩展）
+└── examples/             # 使用示例
+├── console/              # 可视化控制台（内嵌）
 ```
 
 ---
 
-## Testing
+## 运行测试
 
 ```bash
-# 1. Configure your keys
+# 1. 配置 key
 cp llmgate.toml.example llmgate.toml
-# Fill in real keys, or set env vars:
+# 填入真实 key，或直接设置环境变量：
 # export GLM_KEY=xxx  MINIMAX_KEY=xxx  DEEPSEEK_KEY=xxx
 
-# 2. Run integration tests
+# 2. 运行集成测试
 go test ./sdk/ ./server/ -v -count=1
 ```
 
-Tests skip automatically if no key is configured.
+未配置 key 时测试自动跳过。
 
 ---
 
-## Roadmap
+## 路线图
 
-- [x] **v0.1** — Go SDK + DeepSeek + basic fallback strategy + metrics
-- [x] **v0.2** — Zhipu (GLM) + MiniMax + structured logging (slog)
-- [x] **v0.3** — 14 providers across 3 protocols, reasoning tokens, configurable default models
-- [x] **v1.0** — Streaming (SSE) + production routing (circuit breaking, rate limiting, retry)
-- [x] **v1.1** — Function calling (tool use) across all providers; 21 providers; data-driven provider architecture
-- [x] **v1.5** — Web console: channel management, chat playground, mock stubs, request debugging
+- [x] **v0.1** — Go SDK + DeepSeek + 基础降级策略 + 指标采集
+- [x] **v0.2** — 智谱（GLM）+ MiniMax + 结构化日志（slog）
+- [x] **v0.3** — 14 家供应商 / 3 套协议全覆盖，推理 token 追踪，默认模型可配置
+- [x] **v1.0** — Streaming（SSE）+ 生产级路由策略（熔断、限流、重试）
+- [x] **v1.1** — 函数调用（Tool Use）全协议支持；21 家供应商；数据驱动架构
+- [x] **v1.5** — 可视化控制台：渠道管理、对话调试、Mock 桩、请求记录
 
 ---
 
-## Adding a Provider
+## 新增 Provider
 
-**For OpenAI-compatible APIs** — add one entry to the `builtins` table in [core/providers/openaicompat/builtins.go](core/providers/openaicompat/builtins.go):
+**OpenAI 兼容协议** — 在 [core/providers/openaicompat/builtins.go](core/providers/openaicompat/builtins.go) 的 `builtins` 表里加一行：
 
 ```go
 {
@@ -365,7 +365,7 @@ Tests skip automatically if no key is configured.
 },
 ```
 
-**For custom API formats** — implement the `Provider` interface (see [design.md](docs/design.md#adding-a-provider)).
+**自定义协议** — 实现 `Provider` 接口，参考 [llmgate-design.md](docs/llmgate-design.md#adding-a-provider)。
 
 ---
 

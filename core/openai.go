@@ -2,32 +2,40 @@ package core
 
 import "encoding/json"
 
-// oaiMsg is the OpenAI wire-format message.
 type oaiMsg struct {
-	Role             string     `json:"role"`
-	Content          *string    `json:"content"` // nil encodes as JSON null
-	ToolCalls        []ToolCall `json:"tool_calls,omitempty"`
-	ToolCallID       string     `json:"tool_call_id,omitempty"`
-	ReasoningContent string     `json:"reasoning_content,omitempty"`
+	Role             string      `json:"role"`
+	Content          interface{} `json:"content"`
+	ToolCalls        []ToolCall  `json:"tool_calls,omitempty"`
+	ToolCallID       string      `json:"tool_call_id,omitempty"`
+	ReasoningContent string      `json:"reasoning_content,omitempty"`
 }
 
-// OpenAIMessages converts ChatRequest messages to OpenAI wire format,
-// prepending a system message when req.System is set.
+type oaiContentPart struct {
+	Type     string    `json:"type"`
+	Text     string    `json:"text,omitempty"`
+	ImageURL *ImageURL `json:"image_url,omitempty"`
+}
+
 func OpenAIMessages(req *ChatRequest) []oaiMsg {
 	var msgs []oaiMsg
 	if req.System != "" {
-		s := req.System
-		msgs = append(msgs, oaiMsg{Role: "system", Content: &s})
+		msgs = append(msgs, oaiMsg{Role: "system", Content: req.System})
 	}
 	for _, m := range req.Messages {
 		om := oaiMsg{Role: m.Role, ToolCallID: m.ToolCallID, ReasoningContent: m.ReasoningContent}
 		if len(m.ToolCalls) > 0 {
 			om.ToolCalls = m.ToolCalls
 			if m.Content != "" {
-				om.Content = &m.Content
+				om.Content = m.Content
 			}
+		} else if len(m.ContentParts) > 0 {
+			parts := make([]oaiContentPart, len(m.ContentParts))
+			for i, p := range m.ContentParts {
+				parts[i] = oaiContentPart{Type: p.Type, Text: p.Text, ImageURL: p.ImageURL}
+			}
+			om.Content = parts
 		} else {
-			om.Content = &m.Content
+			om.Content = m.Content
 		}
 		msgs = append(msgs, om)
 	}
@@ -54,6 +62,24 @@ func OpenAIBody(model string, stream bool, req *ChatRequest) map[string]interfac
 		if req.ToolChoice != nil {
 			body["tool_choice"] = req.ToolChoice
 		}
+	}
+	if req.TopP != nil {
+		body["top_p"] = *req.TopP
+	}
+	if len(req.Stop) > 0 {
+		body["stop"] = req.Stop
+	}
+	if req.FrequencyPenalty != nil {
+		body["frequency_penalty"] = *req.FrequencyPenalty
+	}
+	if req.PresencePenalty != nil {
+		body["presence_penalty"] = *req.PresencePenalty
+	}
+	if req.Seed != nil {
+		body["seed"] = *req.Seed
+	}
+	if req.ResponseFormat != nil {
+		body["response_format"] = req.ResponseFormat
 	}
 	if req.ThinkingType == "disabled" {
 		body["thinking"] = map[string]string{"type": "disabled"}

@@ -86,7 +86,28 @@ func anthropicMessages(req *core.ChatRequest) []interface{} {
 			}
 			msgs = append(msgs, map[string]interface{}{"role": "assistant", "content": parts})
 		default:
-			msgs = append(msgs, map[string]interface{}{"role": m.Role, "content": m.Content})
+			if len(m.ContentParts) > 0 {
+				parts := make([]map[string]interface{}, 0, len(m.ContentParts))
+				for _, p := range m.ContentParts {
+					switch p.Type {
+					case "text":
+						parts = append(parts, map[string]interface{}{"type": "text", "text": p.Text})
+					case "image_url":
+						if p.ImageURL != nil {
+							parts = append(parts, map[string]interface{}{
+								"type": "image",
+								"source": map[string]interface{}{
+									"type": "url",
+									"url":  p.ImageURL.URL,
+								},
+							})
+						}
+					}
+				}
+				msgs = append(msgs, map[string]interface{}{"role": m.Role, "content": parts})
+			} else {
+				msgs = append(msgs, map[string]interface{}{"role": m.Role, "content": m.Content})
+			}
 		}
 	}
 	return msgs
@@ -126,6 +147,12 @@ func (p *Provider) Chat(ctx context.Context, req *core.ChatRequest) (*core.ChatR
 	}
 	if req.Temperature != nil {
 		body["temperature"] = *req.Temperature
+	}
+	if req.TopP != nil {
+		body["top_p"] = *req.TopP
+	}
+	if len(req.Stop) > 0 {
+		body["stop_sequences"] = req.Stop
 	}
 	if len(req.Tools) > 0 {
 		body["tools"] = anthropicTools(req.Tools)

@@ -135,6 +135,28 @@ func (g *Gateway) Models() []string {
 	return models
 }
 
+func (g *Gateway) Embed(ctx context.Context, req *core.EmbedRequest) (*core.EmbedResponse, error) {
+	var target core.Provider
+	if g.pinnedTo != "" {
+		p, ok := g.engine.GetProvider(g.pinnedTo)
+		if !ok {
+			return nil, fmt.Errorf("sdk: provider %q not found", g.pinnedTo)
+		}
+		target = p
+	} else {
+		providers := g.engine.Providers()
+		if len(providers) == 0 {
+			return nil, fmt.Errorf("sdk: no providers configured")
+		}
+		target = providers[0]
+	}
+	ep, ok := target.(core.EmbeddingProvider)
+	if !ok {
+		return nil, fmt.Errorf("sdk: provider %q does not support embeddings", target.Name())
+	}
+	return ep.Embed(ctx, req)
+}
+
 func (g *Gateway) Engine() *core.Engine {
 	return g.engine
 }

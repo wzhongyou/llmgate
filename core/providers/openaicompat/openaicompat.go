@@ -204,3 +204,65 @@ func wrapThinkStream(ctx context.Context, in <-chan core.StreamChunk) <-chan cor
 	}()
 	return out
 }
+
+func (p *Provider) Embed(ctx context.Context, req *core.EmbedRequest) (*core.EmbedResponse, error) {
+	model := req.Model
+	if model == "" {
+		model = "text-embedding-3-small"
+	}
+	body := map[string]interface{}{
+		"model": model,
+		"input": req.Input,
+	}
+	payload, err := json.Marshal(body)
+	if err != nil {
+		return nil, &core.ProviderError{Provider: p.name, Message: err.Error(), Cause: err}
+	}
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, p.baseURL+"/embeddings", bytes.NewReader(payload))
+	if err != nil {
+		return nil, &core.ProviderError{Provider: p.name, Message: err.Error(), Cause: err}
+	}
+	httpReq.Header.Set("Authorization", "Bearer "+p.key)
+	httpReq.Header.Set("Content-Type", "application/json")
+
+	resp, err := p.client.Do(httpReq)
+	if err != nil {
+		return nil, &core.ProviderError{Provider: p.name, Message: err.Error(), Retryable: true, Cause: err}
+	}
+	defer resp.Body.Close()
+
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, &core.ProviderError{Provider: p.name, Message: err.Error(), Retryable: true, Cause: err}
+	}
+	if resp.StatusCode != http.StatusOK {
+		return nil, &core.ProviderError{Provider: p.name, StatusCode: resp.StatusCode, Message: string(respBody), Retryable: resp.StatusCode >= 500 || resp.StatusCode == 429}
+	}
+
+	var result struct {
+		Data []struct {
+			Embedding []float32 `json:"embedding"`
+		} `json:"data"`
+		Model string `json:"model"`
+		Usage struct {
+			PromptTokens int `json:"prompt_tokens"`
+			TotalTokens  int `json:"total_tokens"`
+		} `json:"usage"`
+	}
+	if err := json.Unmarshal(respBody, &result); err != nil {
+		return nil, &core.ProviderError{Provider: p.name, Message: err.Error(), Cause: err}
+	}
+
+	embeddings := make([][]float32, len(result.Data))
+	for i, d := range result.Data {
+		embeddings[i] = d.Embedding
+	}
+	return &core.EmbedResponse{
+		Embeddings: embeddings,
+		Model:      result.Model,
+		Usage: core.Usage{
+			InputTokens: result.Usage.PromptTokens,
+			TotalTokens: result.Usage.TotalTokens,
+		},
+	}, nil
+}
