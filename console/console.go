@@ -251,6 +251,7 @@ type RecentEntry struct {
 	Response     *core.ChatResponse  `json:"response"`
 	Error        string              `json:"error,omitempty"`
 	Stream       bool                `json:"stream"`
+	Source       string              `json:"source,omitempty"` // "replay" | "shadow" | "" (normal)
 }
 
 type ringBuffer struct {

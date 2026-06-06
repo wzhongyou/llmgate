@@ -378,13 +378,15 @@ function renderRecent(entries) {
     el.innerHTML = '<p class="empty">No requests recorded yet. Send a request to /v1/chat to see it here.</p>';
     return;
   }
-  let html = '<table><thead><tr><th>Time</th><th>Provider</th><th>Model</th><th>Status</th><th>Tokens</th><th>Latency</th><th></th></tr></thead><tbody>';
+  let html = '<table><thead><tr><th>Time</th><th>Provider</th><th>Model</th><th>Status</th><th>Source</th><th>Tokens</th><th>Latency</th><th></th></tr></thead><tbody>';
   for (const e of entries) {
+    const source = e.source ? `<span class="tag">${esc(e.source)}</span>` : '';
     html += `<tr>
       <td>${new Date(e.time).toLocaleTimeString()}</td>
       <td>${esc(e.provider)}</td>
       <td>${esc(e.model)}</td>
       <td>${e.status}${e.error ? ' <span class="err">'+esc(e.error)+'</span>' : ''}</td>
+      <td>${source}</td>
       <td>in=${e.input_tokens} out=${e.output_tokens}</td>
       <td>${e.latency_ms.toFixed(0)}ms</td>
       <td><button onclick="viewRecent('${e.id}')">Detail</button></td></tr>`;

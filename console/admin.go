@@ -578,6 +578,27 @@ func (c *Console) handleHarnessReplay(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	results := harness.Replay(r.Context(), c.engine, body.Provider, records)
+	for _, res := range results {
+		entry := RecentEntry{
+			Time:     time.Now(),
+			Provider: body.Provider,
+			Status:   http.StatusOK,
+			Source:   "replay",
+			Request:  res.Original.Request,
+			Response: res.Replayed,
+		}
+		if res.Replayed != nil {
+			entry.Model = res.Replayed.Model
+			entry.InputTokens = res.Replayed.Usage.InputTokens
+			entry.OutputTokens = res.Replayed.Usage.OutputTokens
+			entry.LatencyMs = res.Latency
+		}
+		if res.Error != "" {
+			entry.Status = http.StatusInternalServerError
+			entry.Error = res.Error
+		}
+		c.RecordRequest(entry)
+	}
 	writeJSON(w, http.StatusOK, results)
 }
 
