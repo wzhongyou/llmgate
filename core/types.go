@@ -68,14 +68,14 @@ type ImageURL struct {
 }
 
 type ChatResponse struct {
-	Content          string
+	Content          string     `json:"content"`
 	ReasoningContent string     `json:"reasoning_content,omitempty"`
 	ToolCalls        []ToolCall `json:"tool_calls,omitempty"`
 	FinishReason     string     `json:"finish_reason,omitempty"`
-	Model            string
-	Provider         string
-	Usage            Usage
-	Latency          time.Duration
+	Model            string     `json:"model"`
+	Provider         string     `json:"provider"`
+	Usage            Usage      `json:"usage"`
+	Latency          time.Duration `json:"-"`
 }
 
 type Usage struct {
