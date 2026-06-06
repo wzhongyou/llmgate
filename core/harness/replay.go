@@ -51,6 +51,7 @@ func LoadRecords(path string, limit int) ([]Record, error) {
 
 // Replay sends recorded requests to a target provider and returns comparison results.
 func Replay(ctx context.Context, engine *core.Engine, provider string, records []Record) []ReplayResult {
+	ctx = SkipRecordCtx(ctx)
 	results := make([]ReplayResult, 0, len(records))
 	for _, rec := range records {
 		if rec.Request == nil {

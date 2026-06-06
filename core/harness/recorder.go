@@ -10,6 +10,13 @@ import (
 	"github.com/wzhongyou/llmgate/core"
 )
 
+type ctxKeySkipRecord struct{}
+
+// SkipRecordCtx returns a context that tells Recorder to skip recording.
+func SkipRecordCtx(ctx context.Context) context.Context {
+	return context.WithValue(ctx, ctxKeySkipRecord{}, true)
+}
+
 // Record is one recorded request-response pair.
 type Record struct {
 	Timestamp time.Time          `json:"timestamp"`
@@ -38,7 +45,10 @@ func NewRecorder(path string) (*Recorder, error) {
 	return &Recorder{file: f, enc: json.NewEncoder(f), enabled: true}, nil
 }
 
-func (r *Recorder) AfterChat(_ context.Context, req *core.ChatRequest, resp *core.ChatResponse, err error) {
+func (r *Recorder) AfterChat(ctx context.Context, req *core.ChatRequest, resp *core.ChatResponse, err error) {
+	if ctx.Value(ctxKeySkipRecord{}) != nil {
+		return
+	}
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	if !r.enabled {
