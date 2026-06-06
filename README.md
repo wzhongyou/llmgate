@@ -184,7 +184,7 @@ go run ./examples/server
 # 浏览器打开 http://localhost:8080/admin/
 ```
 
-**四大页面覆盖开发全流程：**
+**五大页面覆盖开发全流程：**
 
 | 页面 | 用途 |
 |------|------|
@@ -192,6 +192,7 @@ go run ./examples/server
 | **Playground（调试）** | 交互式测试 — 选模型、看流式输出、Token 用量、延迟 |
 | **Mock（桩）** | 模拟返回 — 模拟 429/500/超时/空响应，测试异常处理 |
 | **Recent（记录）** | 最近 200 条请求 — 完整输入输出查看，每 5s 自动刷新 |
+| **Harness（治具）** | 请求录制/回放、影子流量对比、格式合规告警 |
 
 Mock provider 以 `"mock"` 名称注册在引擎上，在 Playground 中选择即可验证规则。
 
@@ -242,6 +243,40 @@ admin_token = "your-secret"   # 启用 /admin/ 控制台
 - `GET /health` — 健康检查
 - `GET /metrics` — Prometheus 指标
 - `GET /admin/` — 可视化控制台（需配置 `admin_token`）
+
+---
+
+## Harness（测试治具）
+
+内置的 LLM 测试工程工具，解决模型升级验证和质量监控问题。
+
+```toml
+[harness]
+record = true                         # 录制所有请求/响应到 JSONL
+shadow_provider = "deepseek"          # 影子流量：异步发给另一个 provider 对比
+```
+
+| 能力 | 说明 |
+|------|------|
+| **请求录制** | 每次 Chat 调用自动记录到 JSONL 文件，用于回归测试基准 |
+| **回放对比** | 历史请求重新发给新模型，对比 finish_reason、tool_calls、token 变化 |
+| **影子流量** | 异步复制真实请求到 shadow provider，零延迟影响评估新模型 |
+| **合规探针** | 始终检测 tool_calls JSON 合法性和 finish_reason 规范性 |
+| **Hook 扩展** | 实现 `core.Hook` 接口，注入自定义观测逻辑 |
+
+自定义 Hook：
+
+```go
+type MetricsHook struct{}
+
+func (h *MetricsHook) AfterChat(ctx context.Context, req *core.ChatRequest, resp *core.ChatResponse, err error) {
+    // 上报到你的监控系统
+}
+
+gw.Engine().AddHook(&MetricsHook{})
+```
+
+详见 [llmgate-design.md](docs/llmgate-design.md#harness-engineering)。
 
 ---
 
@@ -347,6 +382,7 @@ go test ./sdk/ ./server/ -v -count=1
 - [x] **v1.0** — Streaming（SSE）+ 生产级路由策略（熔断、限流、重试）
 - [x] **v1.1** — 函数调用（Tool Use）全协议支持；20 家供应商；数据驱动架构
 - [x] **v1.5** — 可视化控制台：渠道管理、对话调试、Mock 桩、请求记录
+- [x] **v2.0** — Harness Engineering：请求录制/回放、影子流量、格式合规探针、Hook 扩展机制
 
 ---
 

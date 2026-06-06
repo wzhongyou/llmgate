@@ -472,6 +472,11 @@ POST   /admin/api/mock/rules/reorder    # reorder priorities
 GET    /admin/api/recent                # list recent requests
 GET    /admin/api/recent/{id}           # get full request/response
 
+GET    /admin/api/harness/status        # recording/shadow status
+POST   /admin/api/harness/toggle        # enable/disable recording or shadow
+POST   /admin/api/harness/replay        # replay recorded requests to a provider
+GET    /admin/api/harness/violations    # format compliance violations
+
 POST   /admin/api/config/save           # write config to TOML file
 ```
 
@@ -482,3 +487,98 @@ Registered as `"mock"` on the engine. Each `MockRule` has a match model, priorit
 ### Recent Requests
 
 Last 200 requests in a ring buffer (in-memory, lost on restart). Summary table auto-refreshes every 5 seconds. Expand any entry to view full request/response JSON.
+
+---
+
+## Harness Engineering
+
+The harness subsystem provides testing and observability tools for evaluating LLM provider behavior. It is built on a pluggable **Hook** interface in the engine layer.
+
+### Directory
+
+```
+core/
+├── hook.go              # Hook interface + Engine integration
+└── harness/
+    ├── recorder.go      # Request/response JSONL recording
+    ├── replay.go        # Replay recorded requests for comparison
+    ├── shadow.go        # Async shadow traffic to a secondary provider
+    └── probe.go         # Format compliance probes (always active)
+```
+
+### Hook Interface
+
+```go
+// core/hook.go
+type Hook interface {
+    AfterChat(ctx context.Context, req *ChatRequest, resp *ChatResponse, err error)
+}
+
+engine.AddHook(myHook)  // register any number of hooks
+```
+
+Hooks fire after every `Chat`, `ChatWithProvider`, and `ChatWithFallback` call — success or failure.
+
+### Request Recording
+
+Records every request/response pair to a JSONL file for offline analysis and replay.
+
+```toml
+[harness]
+record = true
+record_path = "harness_records.jsonl"
+```
+
+Each line: `{"timestamp", "provider", "model", "latency_ms", "request", "response", "error"}`.
+
+SDK: `gw.Recorder()` returns the `*harness.Recorder` (nil if not configured).
+
+### Replay
+
+Sends recorded requests to a target provider and compares results:
+
+- `finish_reason` match (stop/tool_calls/length)
+- `tool_calls` structure match (same count)
+- Token delta percentage (output token change)
+
+```go
+records, _ := harness.LoadRecords("harness_records.jsonl", 50)
+results := harness.Replay(ctx, engine, "deepseek", records)
+```
+
+Console: Harness tab → select provider → Run Replay.
+
+### Shadow Traffic
+
+Asynchronously sends a copy of each successful request to a shadow provider. The main request is unaffected — shadow runs in a background goroutine with a 30s timeout.
+
+```toml
+[harness]
+shadow_provider = "deepseek"
+shadow_path = "harness_shadow.jsonl"
+```
+
+Flow: `User → Engine.Chat() → primary provider → response to user` + async `→ shadow provider → write to file`.
+
+SDK: `gw.Shadow()` returns the `*harness.Shadow` (nil if not configured).
+
+### Format Compliance Probe
+
+Always active (no config needed). Checks every response for:
+
+- `tool_calls[].arguments` is valid JSON
+- `finish_reason` is in the known set (`stop`, `tool_calls`, `length`, `content_filter`)
+
+Violations stored in a 100-entry ring buffer. Console: Harness tab → Violations section.
+
+SDK: `gw.Probe().Violations()` returns the current violation list.
+
+### Config
+
+```toml
+[harness]
+record = true                            # enable request/response recording
+record_path = "harness_records.jsonl"    # output file (default)
+shadow_provider = ""                     # target provider for shadow traffic (empty = off)
+shadow_path = "harness_shadow.jsonl"     # shadow results file (default)
+```
