@@ -15,6 +15,7 @@ type Config struct {
 	Providers  []core.ProviderConfig `toml:"providers"`
 	Strategy   core.StrategyConfig   `toml:"strategy"`
 	Server     ServerConfig          `toml:"server"`
+	Harness    core.HarnessConfig    `toml:"harness"`
 
 	configPath string
 	keyRefs    map[string]string // provider name -> original TOML key value
@@ -39,6 +40,7 @@ func (c *Config) coreConfig() *core.GatewayConfig {
 	return &core.GatewayConfig{
 		Providers: c.Providers,
 		Strategy:  c.Strategy,
+		Harness:   c.Harness,
 	}
 }
 
