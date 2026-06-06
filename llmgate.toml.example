@@ -13,7 +13,7 @@
 #   gemini      -> gemini-3.1-flash
 #   glm         -> glm-5.1
 #   grok        -> grok-4.1-fast-non-reasoning
-#   groq        -> llama-3.3-70b-versatile
+#   groq        -> meta-llama/llama-4-maverick-17b-128e
 #   hunyuan     -> hy3-preview
 #   kimi        -> kimi-k2.6
 #   llama       -> llama-4-maverick
@@ -22,10 +22,9 @@
 #   mistral     -> mistral-large-latest
 #   openai      -> gpt-5.5
 #   qwen        -> qwen3.6-plus
-#   siliconflow -> Qwen/Qwen2.5-72B-Instruct
-#   stepfun     -> step-3.5-flash
-#   together    -> meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo
-#   yi          -> yi-large
+#   siliconflow -> Qwen/Qwen3-72B
+#   stepfun     -> step-3.7-flash
+#   together    -> meta-llama/Llama-4-Maverick-17B-128E-Instruct-FP8
 
 [[providers]]
 name = "anthropic"
@@ -128,10 +127,6 @@ name = "together"
 key = "${TOGETHER_KEY}"
 # base_url = "https://api.together.xyz/v1"
 
-[[providers]]
-name = "yi"
-key = "${YI_KEY}"
-# base_url = "https://api.lingyiwanwu.com/v1"
 
 # Routing strategy: determines provider selection order (decorator chain)
 [strategy]

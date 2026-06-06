@@ -20,7 +20,7 @@ llmgate/
 │   ├── config.go         # GatewayConfig, env var expansion, validation
 │   ├── strategies.go     # Built-in: PrimaryFirst, Latency, TimeBased
 │   └── providers/
-│       ├── openaicompat/ # All 19 OpenAI-compatible providers (data-driven)
+│       ├── openaicompat/ # All 18 OpenAI-compatible providers (data-driven)
 │       │   ├── openaicompat.go  # Generic Provider implementation
 │       │   └── builtins.go      # Provider definition table + init()
 │       ├── anthropic/    # Anthropic (Claude) — custom Messages API
@@ -48,7 +48,7 @@ llmgate/
 
 | Protocol | Providers | Endpoint | Auth |
 |----------|-----------|----------|------|
-| OpenAI-compatible | baichuan, deepseek, doubao, ernie, glm, grok, groq, hunyuan, kimi, llama, mimo, minimax, mistral, openai, qwen, siliconflow, stepfun, together, yi | `POST /chat/completions` | `Bearer {key}` |
+| OpenAI-compatible | baichuan, deepseek, doubao, ernie, glm, grok, groq, hunyuan, kimi, llama, mimo, minimax, mistral, openai, qwen, siliconflow, stepfun, together | `POST /chat/completions` | `Bearer {key}` |
 | Anthropic Messages | anthropic | `POST /messages` | `x-api-key: {key}`, `anthropic-version` header |
 | Gemini generateContent | gemini | `POST /models/{model}:generateContent` | `x-goog-api-key: {key}` |
 
@@ -114,12 +114,13 @@ type ChatResponse struct {
 }
 
 type StreamChunk struct {
-    Content      string
-    ToolCalls    []ToolCall `json:"tool_calls,omitempty"` // non-nil only on final tool_calls chunk
-    FinishReason string     `json:"finish_reason,omitempty"`
-    Model        string
-    Usage        *Usage  // non-nil only on the final usage chunk
-    Error        error
+    Content          string
+    ReasoningContent string     `json:"reasoning_content,omitempty"`
+    ToolCalls        []ToolCall `json:"tool_calls,omitempty"` // non-nil only on final tool_calls chunk
+    FinishReason     string     `json:"finish_reason,omitempty"`
+    Model            string
+    Usage            *Usage  // non-nil only on the final usage chunk
+    Error            error
 }
 
 type Usage struct {

@@ -45,6 +45,7 @@ func (p *Provider) Name() string { return "anthropic" }
 func (p *Provider) Models() []string {
 	return []string{
 		"claude-opus-4-7",
+		"claude-opus-4-6",
 		"claude-sonnet-4-6",
 		"claude-haiku-4-5",
 	}

@@ -185,9 +185,26 @@ func (c *Console) handlePlaygroundChat(w http.ResponseWriter, r *http.Request) {
 	latency := time.Since(start)
 
 	if err != nil {
+		c.RecordRequest(RecentEntry{
+			Time:    time.Now(),
+			Status:  http.StatusInternalServerError,
+			Error:   err.Error(),
+			Request: &req,
+		})
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
 		return
 	}
+	c.RecordRequest(RecentEntry{
+		Time:         time.Now(),
+		Provider:     resp.Provider,
+		Model:        resp.Model,
+		Status:       http.StatusOK,
+		LatencyMs:    float64(latency.Microseconds()) / 1000.0,
+		InputTokens:  resp.Usage.InputTokens,
+		OutputTokens: resp.Usage.OutputTokens,
+		Request:      &req,
+		Response:     resp,
+	})
 	writeJSON(w, http.StatusOK, map[string]interface{}{
 		"content":       resp.Content,
 		"tool_calls":    resp.ToolCalls,
@@ -209,6 +226,7 @@ func (c *Console) handlePlaygroundStream(w http.ResponseWriter, r *http.Request)
 	provider := r.URL.Query().Get("provider")
 	req.Stream = true
 
+	start := time.Now()
 	var ch <-chan core.StreamChunk
 	var err error
 	if provider != "" {
@@ -217,6 +235,13 @@ func (c *Console) handlePlaygroundStream(w http.ResponseWriter, r *http.Request)
 		ch, err = c.engine.ChatStream(r.Context(), &req)
 	}
 	if err != nil {
+		c.RecordRequest(RecentEntry{
+			Time:   time.Now(),
+			Status: http.StatusInternalServerError,
+			Error:  err.Error(),
+			Stream: true,
+			Request: &req,
+		})
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
 		return
 	}
@@ -232,6 +257,9 @@ func (c *Console) handlePlaygroundStream(w http.ResponseWriter, r *http.Request)
 	w.Header().Set("X-Accel-Buffering", "no")
 	w.WriteHeader(http.StatusOK)
 
+	var model, prov string
+	var usage *core.Usage
+	var content, finishReason string
 	enc := json.NewEncoder(w)
 	for chunk := range ch {
 		if chunk.Error != nil {
@@ -239,12 +267,48 @@ func (c *Console) handlePlaygroundStream(w http.ResponseWriter, r *http.Request)
 			flusher.Flush()
 			return
 		}
+		if chunk.Model != "" {
+			model = chunk.Model
+		}
+		if chunk.Usage != nil {
+			usage = chunk.Usage
+		}
+		if chunk.FinishReason != "" {
+			finishReason = chunk.FinishReason
+		}
+		content += chunk.Content
 		fmt.Fprint(w, "data: ")
 		enc.Encode(chunk)
 		flusher.Flush()
 	}
 	fmt.Fprint(w, "data: [DONE]\n\n")
 	flusher.Flush()
+
+	prov = provider
+	resp := &core.ChatResponse{
+		Content:      content,
+		Model:        model,
+		Provider:     prov,
+		FinishReason: finishReason,
+	}
+	if usage != nil {
+		resp.Usage = *usage
+	}
+	entry := RecentEntry{
+		Time:      time.Now(),
+		Provider:  prov,
+		Model:     model,
+		Status:    http.StatusOK,
+		LatencyMs: float64(time.Since(start).Microseconds()) / 1000.0,
+		Stream:    true,
+		Request:   &req,
+		Response:  resp,
+	}
+	if usage != nil {
+		entry.InputTokens = usage.InputTokens
+		entry.OutputTokens = usage.OutputTokens
+	}
+	c.RecordRequest(entry)
 }
 
 // --- mock rule handlers ---

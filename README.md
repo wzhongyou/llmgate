@@ -1,6 +1,6 @@
 # llmgate
 
-> **高性能 LLM 网关，专为 Go 智能体打造** — 统一 API 接入 20+ 模型供应商，函数调用、流量控制、自动降级、智能体调试一站解决。
+> **高性能 LLM 网关，专为 Go 智能体打造** — 统一 API 接入 20 家模型供应商，函数调用、流量控制、自动降级、智能体调试一站解决。
 
 [![Go Version](https://img.shields.io/badge/go-%3E%3D1.21-blue)](https://golang.org/)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
@@ -42,7 +42,7 @@ snap := gw.Snapshot()                                  // 各 provider 延迟及
 ### 核心亮点
 
 - **函数调用（Tool Use）全协议支持** — 统一的 `Tool`/`ToolCall` 类型同时适配 OpenAI、Anthropic、Gemini 三套协议，为 ReAct 智能体和 ToolNode 工作流做好准备。
-- **数据驱动的供应商架构** — 19 个独立 provider 包精简为一张 `builtins` 表。新增 OpenAI 兼容供应商只需一行数据，无需编写 Go 代码。
+- **数据驱动的供应商架构** — 18 个独立 provider 包精简为一张 `builtins` 表。新增 OpenAI 兼容供应商只需一行数据，无需编写 Go 代码。
 - **零代码自定义接入** — 配置文件中 `protocol = "openai-compat"` 即可接入任意 OpenAI 兼容 API，完全不用写代码。
 
 ---
@@ -276,23 +276,22 @@ srv, _ := server.New(cfg, server.WithLogger(logger))
 | 字节跳动（豆包） | OpenAI 兼容 | `doubao-seed-1.6-250615` |
 | DeepSeek | OpenAI 兼容 | `deepseek-v4-flash` |
 | Google (Gemini) | Gemini generateContent | `gemini-3.1-flash` |
-| Groq | OpenAI 兼容 | `llama-3.3-70b-versatile` |
+| Groq | OpenAI 兼容 | `meta-llama/llama-4-maverick-17b-128e` |
 | Meta (Llama) | OpenAI 兼容 | `llama-4-maverick` |
 | MiniMax | OpenAI 兼容 | `MiniMax-M2.7` |
 | Mistral | OpenAI 兼容 | `mistral-large-latest` |
 | 月之暗面（Kimi） | OpenAI 兼容 | `kimi-k2.6` |
 | OpenAI | OpenAI 兼容 | `gpt-5.5` |
 | 阿里百炼（通义千问） | OpenAI 兼容 | `qwen3.6-plus` |
-| SiliconFlow | OpenAI 兼容 | `Qwen/Qwen2.5-72B-Instruct` |
-| 阶跃星辰（StepFun） | OpenAI 兼容 | `step-3.5-flash` |
+| SiliconFlow | OpenAI 兼容 | `Qwen/Qwen3-72B` |
+| 阶跃星辰（StepFun） | OpenAI 兼容 | `step-3.7-flash` |
 | 腾讯（混元） | OpenAI 兼容 | `hy3-preview` |
-| Together AI | OpenAI 兼容 | `meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo` |
+| Together AI | OpenAI 兼容 | `meta-llama/Llama-4-Maverick-17B-128E-Instruct-FP8` |
 | xAI (Grok) | OpenAI 兼容 | `grok-4.1-fast-non-reasoning` |
 | 小米（MiMo） | OpenAI 兼容 | `mimo-v2-pro` |
-| 零一万物（Yi） | OpenAI 兼容 | `yi-large` |
 | 智谱（GLM） | OpenAI 兼容 | `glm-5.1` |
 
-**3 套协议**：OpenAI 兼容（19 家）、Anthropic Messages、Gemini generateContent。
+**3 套协议**：OpenAI 兼容（18 家）、Anthropic Messages、Gemini generateContent。
 
 所有供应商均支持 `base_url` 覆盖。无需写代码即可接入任意 OpenAI 兼容的供应商：
 
@@ -312,7 +311,7 @@ protocol = "openai-compat"
 llmgate/
 ├── core/                 # Provider 接口、引擎、策略、指标
 │   └── providers/
-│       ├── openaicompat/ # 全部 19 个 OpenAI 兼容 provider（数据驱动）
+│       ├── openaicompat/ # 全部 18 个 OpenAI 兼容 provider（数据驱动）
 │       ├── anthropic/    # Anthropic Messages API
 │       └── gemini/       # Gemini generateContent API
 ├── sdk/                  # Go SDK
@@ -346,7 +345,7 @@ go test ./sdk/ ./server/ -v -count=1
 - [x] **v0.2** — 智谱（GLM）+ MiniMax + 结构化日志（slog）
 - [x] **v0.3** — 14 家供应商 / 3 套协议全覆盖，推理 token 追踪，默认模型可配置
 - [x] **v1.0** — Streaming（SSE）+ 生产级路由策略（熔断、限流、重试）
-- [x] **v1.1** — 函数调用（Tool Use）全协议支持；21 家供应商；数据驱动架构
+- [x] **v1.1** — 函数调用（Tool Use）全协议支持；20 家供应商；数据驱动架构
 - [x] **v1.5** — 可视化控制台：渠道管理、对话调试、Mock 桩、请求记录
 
 ---

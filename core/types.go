@@ -79,18 +79,18 @@ type ChatResponse struct {
 }
 
 type Usage struct {
-	InputTokens     int
-	OutputTokens    int
-	ReasoningTokens int
-	TotalTokens     int
+	InputTokens     int `json:"input_tokens"`
+	OutputTokens    int `json:"output_tokens"`
+	ReasoningTokens int `json:"reasoning_tokens"`
+	TotalTokens     int `json:"total_tokens"`
 }
 
 type StreamChunk struct {
-	Content          string
+	Content          string     `json:"content,omitempty"`
 	ReasoningContent string     `json:"reasoning_content,omitempty"`
-	ToolCalls        []ToolCall `json:"tool_calls,omitempty"` // non-nil only on final tool_calls chunk
+	ToolCalls        []ToolCall `json:"tool_calls,omitempty"`
 	FinishReason     string     `json:"finish_reason,omitempty"`
-	Model            string
-	Usage        *Usage // non-nil only on the final chunk
-	Error        error
+	Model            string     `json:"model,omitempty"`
+	Usage            *Usage     `json:"usage,omitempty"`
+	Error            error      `json:"-"`
 }

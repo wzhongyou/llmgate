@@ -44,7 +44,7 @@ type Provider struct {
 func (p *Provider) Name() string { return "gemini" }
 
 func (p *Provider) Models() []string {
-	return []string{"gemini-3.1-pro", "gemini-3.1-flash"}
+	return []string{"gemini-3.5-flash", "gemini-3.1-pro", "gemini-3.1-flash", "gemini-3-pro", "gemini-3-flash"}
 }
 
 type geminiPart struct {
