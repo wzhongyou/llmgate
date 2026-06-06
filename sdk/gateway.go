@@ -229,7 +229,7 @@ func (g *Gateway) initHarness(cfg *core.HarnessConfig) {
 		if path == "" {
 			path = "harness_shadow.jsonl"
 		}
-		if sh, err := harness.NewShadow(g.engine, cfg.ShadowProvider, path); err == nil {
+		if sh, err := harness.NewShadow(g.engine, cfg.ShadowProvider, cfg.ShadowModel, path); err == nil {
 			g.engine.AddHook(sh)
 			g.shadow = sh
 		}

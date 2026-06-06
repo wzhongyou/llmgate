@@ -146,4 +146,5 @@ listen_addr = ":8084"
 # record = true                          # enable request/response recording
 # record_path = "harness_records.jsonl"  # JSONL output file
 # shadow_provider = ""                   # send shadow copies to this provider (empty = off)
+# shadow_model = ""                      # override model for shadow requests (empty = use original)
 # shadow_path = "harness_shadow.jsonl"   # shadow results file

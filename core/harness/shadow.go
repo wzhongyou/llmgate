@@ -26,12 +26,13 @@ type Shadow struct {
 	mu       sync.Mutex
 	engine   *core.Engine
 	provider string
+	model    string
 	file     *os.File
 	enc      *json.Encoder
 	enabled  bool
 }
 
-func NewShadow(engine *core.Engine, provider, path string) (*Shadow, error) {
+func NewShadow(engine *core.Engine, provider, model, path string) (*Shadow, error) {
 	f, err := os.OpenFile(path, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
 	if err != nil {
 		return nil, err
@@ -39,6 +40,7 @@ func NewShadow(engine *core.Engine, provider, path string) (*Shadow, error) {
 	return &Shadow{
 		engine:   engine,
 		provider: provider,
+		model:    model,
 		file:     f,
 		enc:      json.NewEncoder(f),
 		enabled:  true,
@@ -59,8 +61,13 @@ func (s *Shadow) dispatch(req *core.ChatRequest) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
+	shadowReq := *req
+	if s.model != "" {
+		shadowReq.Model = s.model
+	}
+
 	start := time.Now()
-	resp, err := s.engine.ChatWithProvider(ctx, req, s.provider)
+	resp, err := s.engine.ChatWithProvider(ctx, &shadowReq, s.provider)
 	latency := float64(time.Since(start).Microseconds()) / 1000.0
 
 	rec := ShadowRecord{
