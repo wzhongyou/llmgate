@@ -8,6 +8,7 @@ import (
 	"github.com/BurntSushi/toml"
 
 	"github.com/wzhongyou/llmgate/core"
+	"github.com/wzhongyou/llmgate/core/harness"
 
 	// Auto-register all built-in providers.
 	_ "github.com/wzhongyou/llmgate/core/providers/anthropic"
@@ -19,6 +20,9 @@ type Gateway struct {
 	engine   *core.Engine
 	pinnedTo string
 	fallback []string
+	recorder *harness.Recorder
+	shadow   *harness.Shadow
+	probe    *harness.Probe
 }
 
 // New creates a Gateway and auto-loads providers from environment variables.
@@ -161,6 +165,18 @@ func (g *Gateway) Engine() *core.Engine {
 	return g.engine
 }
 
+func (g *Gateway) Recorder() *harness.Recorder {
+	return g.recorder
+}
+
+func (g *Gateway) Shadow() *harness.Shadow {
+	return g.shadow
+}
+
+func (g *Gateway) Probe() *harness.Probe {
+	return g.probe
+}
+
 func (g *Gateway) InitFromConfig(cfg *core.GatewayConfig) error {
 	if err := cfg.Validate(); err != nil {
 		return fmt.Errorf("sdk: %w", err)
@@ -188,7 +204,36 @@ func (g *Gateway) InitFromConfig(cfg *core.GatewayConfig) error {
 	if strategy != nil {
 		g.engine.SetStrategy(strategy)
 	}
+
+	g.initHarness(&cfg.Harness)
 	return nil
+}
+
+func (g *Gateway) initHarness(cfg *core.HarnessConfig) {
+	// Probe is always active
+	g.probe = harness.NewProbe(100)
+	g.engine.AddHook(g.probe)
+
+	if cfg.Record {
+		path := cfg.RecordPath
+		if path == "" {
+			path = "harness_records.jsonl"
+		}
+		if rec, err := harness.NewRecorder(path); err == nil {
+			g.engine.AddHook(rec)
+			g.recorder = rec
+		}
+	}
+	if cfg.ShadowProvider != "" {
+		path := cfg.ShadowPath
+		if path == "" {
+			path = "harness_shadow.jsonl"
+		}
+		if sh, err := harness.NewShadow(g.engine, cfg.ShadowProvider, path); err == nil {
+			g.engine.AddHook(sh)
+			g.shadow = sh
+		}
+	}
 }
 
 func buildStrategy(sc *core.StrategyConfig) core.Strategy {

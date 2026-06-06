@@ -5,9 +5,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/wzhongyou/llmgate/core"
+	"github.com/wzhongyou/llmgate/core/harness"
 )
 
 // Setup registers all admin API routes and static file serving on the mux.
@@ -30,6 +32,11 @@ func (c *Console) Setup(mux *http.ServeMux) {
 	// Recent requests
 	mux.HandleFunc("GET /admin/api/recent", c.handleRecentList)
 	mux.HandleFunc("GET /admin/api/recent/{id}", c.handleRecentDetail)
+	// Harness
+	mux.HandleFunc("GET /admin/api/harness/status", c.handleHarnessStatus)
+	mux.HandleFunc("POST /admin/api/harness/toggle", c.handleHarnessToggle)
+	mux.HandleFunc("POST /admin/api/harness/replay", c.handleHarnessReplay)
+	mux.HandleFunc("GET /admin/api/harness/violations", c.handleHarnessViolations)
 	// Config
 	mux.HandleFunc("POST /admin/api/config/save", c.handleConfigSave)
 	// Static files
@@ -502,4 +509,82 @@ func safeModels(m []string) []string {
 		return []string{}
 	}
 	return m
+}
+
+// --- harness handlers ---
+
+func (c *Console) handleHarnessStatus(w http.ResponseWriter, r *http.Request) {
+	status := map[string]interface{}{
+		"record_enabled": false,
+		"record_count":   int64(0),
+		"record_path":    "",
+		"shadow_enabled": false,
+	}
+	if c.recorder != nil {
+		status["record_enabled"] = c.recorder.Enabled()
+		status["record_count"] = c.recorder.Count()
+		status["record_path"] = c.recorder.Path()
+		if info, err := os.Stat(c.recorder.Path()); err == nil {
+			status["record_size_bytes"] = info.Size()
+		}
+	}
+	if c.shadow != nil {
+		status["shadow_enabled"] = c.shadow.Enabled()
+	}
+	writeJSON(w, http.StatusOK, status)
+}
+
+func (c *Console) handleHarnessToggle(w http.ResponseWriter, r *http.Request) {
+	var body struct {
+		Record *bool `json:"record"`
+		Shadow *bool `json:"shadow"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+		return
+	}
+	if body.Record != nil && c.recorder != nil {
+		c.recorder.SetEnabled(*body.Record)
+	}
+	if body.Shadow != nil && c.shadow != nil {
+		c.shadow.SetEnabled(*body.Shadow)
+	}
+	writeJSON(w, http.StatusOK, map[string]string{"ok": "true"})
+}
+
+func (c *Console) handleHarnessReplay(w http.ResponseWriter, r *http.Request) {
+	var body struct {
+		Provider string `json:"provider"`
+		Limit    int    `json:"limit"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+		return
+	}
+	if body.Provider == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "provider required"})
+		return
+	}
+	if body.Limit <= 0 {
+		body.Limit = 20
+	}
+	if c.recorder == nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "recording not enabled"})
+		return
+	}
+	records, err := harness.LoadRecords(c.recorder.Path(), body.Limit)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return
+	}
+	results := harness.Replay(r.Context(), c.engine, body.Provider, records)
+	writeJSON(w, http.StatusOK, results)
+}
+
+func (c *Console) handleHarnessViolations(w http.ResponseWriter, r *http.Request) {
+	if c.probe == nil {
+		writeJSON(w, http.StatusOK, []harness.Violation{})
+		return
+	}
+	writeJSON(w, http.StatusOK, c.probe.Violations())
 }

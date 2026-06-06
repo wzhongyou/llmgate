@@ -9,6 +9,14 @@ import (
 type GatewayConfig struct {
 	Providers []ProviderConfig `toml:"providers"`
 	Strategy  StrategyConfig   `toml:"strategy"`
+	Harness   HarnessConfig    `toml:"harness"`
+}
+
+type HarnessConfig struct {
+	Record         bool   `toml:"record"`
+	RecordPath     string `toml:"record_path"`
+	ShadowProvider string `toml:"shadow_provider"`
+	ShadowPath     string `toml:"shadow_path"`
 }
 
 type StrategyConfig struct {

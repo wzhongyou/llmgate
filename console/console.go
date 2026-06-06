@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/wzhongyou/llmgate/core"
+	"github.com/wzhongyou/llmgate/core/harness"
 )
 
 //go:embed static/*
@@ -24,6 +25,9 @@ type Config struct {
 	AdminToken      string
 	RawProviderKeys map[string]string
 	SaveConfig      func() error // called by handleConfigSave
+	Recorder        *harness.Recorder
+	Shadow          *harness.Shadow
+	Probe           *harness.Probe
 }
 
 // Console is the central coordinator for the developer console.
@@ -36,6 +40,9 @@ type Console struct {
 	recentReqs      *ringBuffer
 	mockStore       *MockStore
 	saveConfig      func() error
+	recorder        *harness.Recorder
+	shadow          *harness.Shadow
+	probe           *harness.Probe
 }
 
 // New creates a Console, registers the mock provider on the engine,
@@ -53,6 +60,9 @@ func New(cfg Config) *Console {
 		recentReqs:      newRingBuffer(200),
 		mockStore:       store,
 		saveConfig:      cfg.SaveConfig,
+		recorder:        cfg.Recorder,
+		shadow:          cfg.Shadow,
+		probe:           cfg.Probe,
 	}
 	return c
 }

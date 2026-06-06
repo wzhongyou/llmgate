@@ -51,6 +51,9 @@ func New(cfg *Config, opts ...Option) (*Server, error) {
 			ConfigPath:      cfg.ConfigPath(),
 			AdminToken:      cfg.Server.AdminToken,
 			RawProviderKeys: cfg.KeyRefs(),
+			Recorder:        gw.Recorder(),
+			Shadow:          gw.Shadow(),
+			Probe:           gw.Probe(),
 			SaveConfig: func() error {
 				s.mu.RLock()
 				c := s.cfg

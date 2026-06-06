@@ -15,6 +15,7 @@ type Engine struct {
 	metrics          *metricsStore
 	breakers         map[string]*circuitBreaker
 	localFactories   map[string]func(ProviderConfig) (Provider, error)
+	hooks            []Hook
 }
 
 func NewEngine(strategy Strategy) *Engine {
@@ -102,14 +103,19 @@ func (e *Engine) Chat(ctx context.Context, req *ChatRequest) (*ChatResponse, err
 		})
 		if err == nil {
 			cb.recordSuccess()
+			e.fireAfterChat(ctx, req, resp, nil)
 			return resp, nil
 		}
 		errs = append(errs, err)
 	}
+	var retErr error
 	if len(errs) == 0 {
-		return nil, fmt.Errorf("core: no providers available")
+		retErr = fmt.Errorf("core: no providers available")
+	} else {
+		retErr = &MultiError{Errors: errs}
 	}
-	return nil, &MultiError{Errors: errs}
+	e.fireAfterChat(ctx, req, nil, retErr)
+	return nil, retErr
 }
 
 func (e *Engine) ChatWithProvider(ctx context.Context, req *ChatRequest, name string) (*ChatResponse, error) {
@@ -117,11 +123,15 @@ func (e *Engine) ChatWithProvider(ctx context.Context, req *ChatRequest, name st
 	p, ok := e.providers[name]
 	e.mu.RUnlock()
 	if !ok {
-		return nil, fmt.Errorf("core: provider %q not found", name)
+		err := fmt.Errorf("core: provider %q not found", name)
+		e.fireAfterChat(ctx, req, nil, err)
+		return nil, err
 	}
 	cb := e.breakerFor(name)
 	if !cb.allow() {
-		return nil, &ProviderError{Provider: name, Message: "circuit open"}
+		err := &ProviderError{Provider: name, Message: "circuit open"}
+		e.fireAfterChat(ctx, req, nil, err)
+		return nil, err
 	}
 	var resp *ChatResponse
 	err := retryCall(ctx, func() error {
@@ -134,9 +144,11 @@ func (e *Engine) ChatWithProvider(ctx context.Context, req *ChatRequest, name st
 		return callErr
 	})
 	if err != nil {
+		e.fireAfterChat(ctx, req, nil, err)
 		return nil, err
 	}
 	cb.recordSuccess()
+	e.fireAfterChat(ctx, req, resp, nil)
 	return resp, nil
 }
 
@@ -167,14 +179,19 @@ func (e *Engine) ChatWithFallback(ctx context.Context, req *ChatRequest, names [
 		})
 		if err == nil {
 			cb.recordSuccess()
+			e.fireAfterChat(ctx, req, resp, nil)
 			return resp, nil
 		}
 		errs = append(errs, err)
 	}
+	var retErr error
 	if len(errs) == 0 {
-		return nil, fmt.Errorf("core: all fallback providers failed")
+		retErr = fmt.Errorf("core: all fallback providers failed")
+	} else {
+		retErr = &MultiError{Errors: errs}
 	}
-	return nil, &MultiError{Errors: errs}
+	e.fireAfterChat(ctx, req, nil, retErr)
+	return nil, retErr
 }
 
 func (e *Engine) Snapshot() MetricsSnapshot {

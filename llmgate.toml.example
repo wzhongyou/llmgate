@@ -140,3 +140,10 @@ listen_addr = ":8084"
 # api_keys = ["your-secret-key-1", "your-secret-key-2"]  # Bearer token auth; empty = no auth
 # rate_limit_rpm = 600  # global requests per minute; 0 = unlimited
 # admin_token = "your-secret"  # enables the web console at /admin/
+
+# Harness: request recording, shadow traffic, and compliance probes
+[harness]
+# record = true                          # enable request/response recording
+# record_path = "harness_records.jsonl"  # JSONL output file
+# shadow_provider = ""                   # send shadow copies to this provider (empty = off)
+# shadow_path = "harness_shadow.jsonl"   # shadow results file

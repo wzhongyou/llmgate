@@ -426,5 +426,86 @@ function showError(tabId, e) {
   document.getElementById(tabId).innerHTML = `<p class="error">${esc(e+'')}</p>`;
 }
 
+// -- harness --
+async function init_harness() {
+  try {
+    const s = await api('/harness/status');
+    renderHarness(s);
+  } catch (e) { showError('tab-harness', e); }
+}
+
+function renderHarness(s) {
+  const el = document.getElementById('tab-harness');
+  const recSize = s.record_size_bytes ? (s.record_size_bytes / 1024).toFixed(1) + ' KB' : '0 KB';
+  el.innerHTML = `
+    <h3>Recording</h3>
+    <p>Status: <strong>${s.record_enabled ? 'ON' : 'OFF'}</strong>
+       &nbsp; Records: ${s.record_count} &nbsp; Size: ${recSize}</p>
+    <button class="primary" onclick="toggleHarness('record', ${!s.record_enabled})">${s.record_enabled ? 'Pause' : 'Start'} Recording</button>
+    <h3>Shadow Traffic</h3>
+    <p>Status: <strong>${s.shadow_enabled ? 'ON' : 'OFF'}</strong></p>
+    <button class="primary" onclick="toggleHarness('shadow', ${!s.shadow_enabled})">${s.shadow_enabled ? 'Pause' : 'Start'} Shadow</button>
+    <h3>Replay</h3>
+    <div class="toolbar">
+      <select id="replay-provider"></select>
+      <input id="replay-limit" type="number" value="20" min="1" max="100" style="width:60px">
+      <button class="primary" onclick="runReplay()">Run Replay</button>
+    </div>
+    <div id="replay-results"></div>
+    <h3>Violations</h3>
+    <div id="violations-list"><p>Loading...</p></div>
+  `;
+  api('/channels').then(chs => {
+    const sel = document.getElementById('replay-provider');
+    if (!sel) return;
+    for (const ch of (chs || [])) {
+      sel.innerHTML += '<option value="'+esc(ch.name)+'">'+esc(ch.name)+'</option>';
+    }
+  });
+  api('/harness/violations').then(vs => {
+    const el = document.getElementById('violations-list');
+    if (!el) return;
+    if (!vs || !vs.length) { el.innerHTML = '<p class="empty">No violations detected.</p>'; return; }
+    let html = '<table><thead><tr><th>Time</th><th>Provider</th><th>Type</th><th>Detail</th></tr></thead><tbody>';
+    for (const v of vs) {
+      html += `<tr><td>${new Date(v.timestamp).toLocaleTimeString()}</td><td>${esc(v.provider)}</td><td>${esc(v.type)}</td><td>${esc(v.detail)}</td></tr>`;
+    }
+    html += '</tbody></table>';
+    el.innerHTML = html;
+  });
+}
+
+async function toggleHarness(field, val) {
+  try {
+    await api('/harness/toggle', 'POST', {[field]: val});
+    init_harness();
+  } catch (e) { alert(e); }
+}
+
+async function runReplay() {
+  const provider = document.getElementById('replay-provider').value;
+  const limit = parseInt(document.getElementById('replay-limit').value) || 20;
+  const el = document.getElementById('replay-results');
+  el.innerHTML = '<p>Running...</p>';
+  try {
+    const results = await api('/harness/replay', 'POST', {provider, limit});
+    if (!results || !results.length) { el.innerHTML = '<p>No records to replay.</p>'; return; }
+    let html = '<table><thead><tr><th>#</th><th>Model</th><th>Finish</th><th>ToolCalls</th><th>Token Δ%</th><th>Latency</th></tr></thead><tbody>';
+    results.forEach((r, i) => {
+      const m = r.match || {};
+      html += `<tr>
+        <td>${i+1}</td>
+        <td>${esc(r.replayed?.model || r.error || '-')}</td>
+        <td>${m.finish_reason_match ? '✅' : '❌'}</td>
+        <td>${m.tool_calls_match ? '✅' : '❌'}</td>
+        <td>${m.token_delta_pct?.toFixed(1) || '-'}%</td>
+        <td>${r.latency_ms?.toFixed(0)}ms</td>
+      </tr>`;
+    });
+    html += '</tbody></table>';
+    el.innerHTML = html;
+  } catch (e) { el.innerHTML = '<p class="error">'+esc(e+'')+'</p>'; }
+}
+
 // boot: load channels tab by default
 init_channels();
