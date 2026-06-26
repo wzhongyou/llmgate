@@ -1,6 +1,6 @@
 # llmgate
 
-> **高性能 LLM 网关，专为 Go 智能体打造** — 统一 API 接入 20 家模型供应商，函数调用、流量控制、自动降级、智能体调试一站解决。
+> **高性能 LLM 网关，专为 Go 智能体打造** — 统一 API 接入 28 家模型供应商，函数调用、流量控制、自动降级、智能体调试一站解决。
 
 [![Go Version](https://img.shields.io/badge/go-%3E%3D1.21-blue)](https://golang.org/)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
@@ -42,7 +42,7 @@ snap := gw.Snapshot()                                  // 各 provider 延迟及
 ### 核心亮点
 
 - **函数调用（Tool Use）全协议支持** — 统一的 `Tool`/`ToolCall` 类型同时适配 OpenAI、Anthropic、Gemini 三套协议，为 ReAct 智能体和 ToolNode 工作流做好准备。
-- **数据驱动的供应商架构** — 18 个独立 provider 包精简为一张 `builtins` 表。新增 OpenAI 兼容供应商只需一行数据，无需编写 Go 代码。
+- **数据驱动的供应商架构** — 26 个 OpenAI 兼容 provider 统一为一张 `builtins` 表。新增供应商只需一条配置，无需编写 Go 代码。
 - **零代码自定义接入** — 配置文件中 `protocol = "openai-compat"` 即可接入任意 OpenAI 兼容 API，完全不用写代码。
 
 ---
@@ -303,32 +303,66 @@ srv, _ := server.New(cfg, server.WithLogger(logger))
 
 ## 支持的供应商
 
-| 供应商 | 协议 | 默认模型 |
-|--------|------|----------|
-| Anthropic (Claude) | Anthropic Messages API | `claude-sonnet-4-6` |
-| 百川（Baichuan） | OpenAI 兼容 | `Baichuan4` |
-| 百度（文心 ERNIE） | OpenAI 兼容 | `ernie-5.1` |
-| 字节跳动（豆包） | OpenAI 兼容 | `doubao-seed-1.6-250615` |
-| DeepSeek | OpenAI 兼容 | `deepseek-v4-flash` |
-| Google (Gemini) | Gemini generateContent | `gemini-3.1-flash` |
-| Groq | OpenAI 兼容 | `meta-llama/llama-4-maverick-17b-128e` |
-| Meta (Llama) | OpenAI 兼容 | `llama-4-maverick` |
-| MiniMax | OpenAI 兼容 | `MiniMax-M2.7` |
-| Mistral | OpenAI 兼容 | `mistral-large-latest` |
-| 月之暗面（Kimi） | OpenAI 兼容 | `kimi-k2.6` |
-| OpenAI | OpenAI 兼容 | `gpt-5.5` |
-| 阿里百炼（通义千问） | OpenAI 兼容 | `qwen3.6-plus` |
-| SiliconFlow | OpenAI 兼容 | `Qwen/Qwen3-72B` |
-| 阶跃星辰（StepFun） | OpenAI 兼容 | `step-3.7-flash` |
-| 腾讯（混元） | OpenAI 兼容 | `hy3-preview` |
-| Together AI | OpenAI 兼容 | `meta-llama/Llama-4-Maverick-17B-128E-Instruct-FP8` |
-| xAI (Grok) | OpenAI 兼容 | `grok-4.1-fast-non-reasoning` |
-| 小米（MiMo） | OpenAI 兼容 | `mimo-v2-pro` |
-| 智谱（GLM） | OpenAI 兼容 | `glm-5.1` |
+### 全球云平台
 
-**3 套协议**：OpenAI 兼容（18 家）、Anthropic Messages、Gemini generateContent。
+| 供应商 | 配置名 | 协议 | 默认模型 | 可用模型 |
+|--------|--------|------|----------|----------|
+| OpenAI | `openai` | OpenAI 兼容 | `gpt-5.5` | `gpt-5.5`, `gpt-5.4-mini`, `gpt-5-nano`, `gpt-4o` |
+| Microsoft Azure Foundry | `azure` | OpenAI 兼容 | `gpt-5.5` | `gpt-5.5`, `gpt-5.4`, `gpt-5.4-mini`, `gpt-5`, `gpt-4o` |
+| Google (Gemini) | `gemini` | Gemini 原生 | `gemini-3.1-flash` | 用户配置 |
+| Anthropic (Claude) | `anthropic` | Anthropic 原生 | `claude-sonnet-4-6` | 用户配置 |
+| Cloudflare AI Gateway | `cloudflare` | OpenAI 兼容 | `@cf/zai-org/glm-5.2` | `glm-5.2`, `kimi-k2.6`, `gemma-4-26b`, `qwen3-30b` |
+| Cerebras | `cerebras` | OpenAI 兼容 | `gpt-oss-120b` | `gpt-oss-120b`, `zai-glm-4.7` |
+| NVIDIA (NIM) | `nvidia` | OpenAI 兼容 | `nemotron-3-super-120b` | `nemotron-3-super-120b`, `llama-3.3-nemotron-super-49b`, `llama-3.1-70b`, `llama-3.1-8b`, `nemotron-3-nano-30b` |
+| Groq | `groq` | OpenAI 兼容 | `llama-4-maverick-17b` | `llama-4-maverick-17b`, `llama-3.3-70b-versatile` |
+| Together AI | `together` | OpenAI 兼容 | `Llama-4-Maverick-17B-FP8` | `Llama-4-Maverick-17B-FP8`, `Llama-3.1-70B-Turbo` |
 
-所有供应商均支持 `base_url` 覆盖。无需写代码即可接入任意 OpenAI 兼容的供应商：
+### 中国云平台
+
+| 供应商 | 配置名 | 协议 | 默认模型 | 可用模型 |
+|--------|--------|------|----------|----------|
+| 阿里云（通义千问） | `qwen` | OpenAI 兼容 | `qwen3.7-max` | `qwen3.7-max`, `qwen3.6-plus`, `qwen3.5-max-preview`, `qwen-max` |
+| 字节跳动（豆包） | `doubao` | OpenAI 兼容 | `doubao-seed-2-0-pro` | `seed-2-0-pro`, `seed-2-0-lite`, `seed-1-6`, `seed-1-6-flash`, `seed-1-6-lite` |
+| 百度（文心 ERNIE） | `ernie` | OpenAI 兼容 | `ernie-5.1` | `ernie-5.1`, `ernie-4.5` |
+| 腾讯（混元） | `hunyuan` | OpenAI 兼容 | `hy3-preview` | `hy3-preview`, `hunyuan-turbos` |
+| 讯飞（星火 Spark） | `spark` | OpenAI 兼容 | `spark-x2` | `spark-x2`, `spark-x2-flash`, `spark-ultra`, `spark-pro`, `spark-lite` |
+| 商汤（日日新） | `sensenova` | OpenAI 兼容 | `sensenova-6.7-flash-lite` | `sensenova-6.7-flash-lite`, `sensenova-u1-fast` |
+
+### 中国 AI 公司
+
+| 供应商 | 配置名 | 协议 | 默认模型 | 可用模型 |
+|--------|--------|------|----------|----------|
+| DeepSeek | `deepseek` | OpenAI 兼容 | `deepseek-v4-pro` | `deepseek-v4-pro`, `deepseek-v4-flash` |
+| 智谱（GLM） | `glm` | OpenAI 兼容 | `glm-5.2` | `glm-5.2`, `glm-5.1`, `glm-5` |
+| 月之暗面（Kimi） | `kimi` | OpenAI 兼容 | `kimi-k2.6` | `kimi-k2.6`, `moonshot-v1-8k`, `moonshot-v1-32k`, `moonshot-v1-128k` |
+| MiniMax | `minimax` | OpenAI 兼容 | `MiniMax-M3` | `MiniMax-M3`, `MiniMax-M2.7`, `MiniMax-M2.5` |
+| 阶跃星辰（StepFun） | `stepfun` | OpenAI 兼容 | `step-3.7-flash` | `step-3.7-flash`, `step-3.5-flash`, `step-3-mini` |
+| 百川智能（Baichuan） | `baichuan` | OpenAI 兼容 | `Baichuan4` | `Baichuan4`, `Baichuan4-Turbo`, `Baichuan4-Air` |
+| 零一万物（Yi） | `yi` | OpenAI 兼容 | `yi-lightning` | `yi-lightning`, `yi-large`, `yi-large-turbo`, `yi-medium`, `yi-vision`, `yi-spark` |
+
+### 全球 AI 公司
+
+| 供应商 | 配置名 | 协议 | 默认模型 | 可用模型 |
+|--------|--------|------|----------|----------|
+| xAI (Grok) | `grok` | OpenAI 兼容 | `grok-4.3` | `grok-4.3`, `grok-4.20`, `grok-4.1`, `grok-code-fast-1` |
+| Perplexity | `perplexity` | OpenAI 兼容 | `sonar-pro` | `sonar-pro`, `sonar`, `sonar-reasoning-pro`, `sonar-reasoning`, `sonar-deep-research` |
+| Mistral | `mistral` | OpenAI 兼容 | `mistral-large-latest` | `mistral-large-latest`, `mistral-small-latest` |
+| Meta (Llama) | `llama` | OpenAI 兼容 | `llama-4-maverick` | `llama-4-maverick`, `llama-4-scout` |
+
+### 推理平台
+
+| 供应商 | 配置名 | 协议 | 默认模型 | 可用模型 |
+|--------|--------|------|----------|----------|
+| SiliconFlow (硅基流动) | `siliconflow` | OpenAI 兼容 | `Qwen/Qwen3-72B` | `Qwen/Qwen3-72B`, `deepseek-ai/DeepSeek-R1` |
+| 小米（MiMo） | `mimo` | OpenAI 兼容 | `mimo-v2-pro` | `mimo-v2.5-pro`, `mimo-v2-pro` |
+
+### 自定义接入
+
+| 配置名 | 协议 | 说明 |
+|--------|------|------|
+| `openai-compat` | OpenAI 兼容 | 任意 OpenAI 兼容 API，通过配置文件 `protocol = "openai-compat"` 接入 |
+
+> **28 家供应商**（26 家 OpenAI 兼容 + 2 家原生协议），3 套协议全覆盖。所有供应商均支持 `base_url` 覆盖。
 
 ```toml
 [[providers]]
@@ -346,7 +380,7 @@ protocol = "openai-compat"
 llmgate/
 ├── core/                 # Provider 接口、引擎、策略、指标
 │   └── providers/
-│       ├── openaicompat/ # 全部 18 个 OpenAI 兼容 provider（数据驱动）
+│       ├── openaicompat/ # 全部 26 个 OpenAI 兼容 provider（数据驱动）
 │       ├── anthropic/    # Anthropic Messages API
 │       └── gemini/       # Gemini generateContent API
 ├── sdk/                  # Go SDK
@@ -380,7 +414,7 @@ go test ./sdk/ ./server/ -v -count=1
 - [x] **v0.2** — 智谱（GLM）+ MiniMax + 结构化日志（slog）
 - [x] **v0.3** — 14 家供应商 / 3 套协议全覆盖，推理 token 追踪，默认模型可配置
 - [x] **v1.0** — Streaming（SSE）+ 生产级路由策略（熔断、限流、重试）
-- [x] **v1.1** — 函数调用（Tool Use）全协议支持；20 家供应商；数据驱动架构
+- [x] **v1.1** — 函数调用（Tool Use）全协议支持；28 家供应商；数据驱动架构
 - [x] **v1.5** — 可视化控制台：渠道管理、对话调试、Mock 桩、请求记录
 - [x] **v2.0** — Harness Engineering：请求录制/回放、影子流量、格式合规探针、Hook 扩展机制
 

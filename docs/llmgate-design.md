@@ -20,7 +20,7 @@ llmgate/
 │   ├── config.go         # GatewayConfig, env var expansion, validation
 │   ├── strategies.go     # Built-in: PrimaryFirst, Latency, TimeBased
 │   └── providers/
-│       ├── openaicompat/ # All 18 OpenAI-compatible providers (data-driven)
+│       ├── openaicompat/ # All 26+ OpenAI-compatible providers (data-driven)
 │       │   ├── openaicompat.go  # Generic Provider implementation
 │       │   └── builtins.go      # Provider definition table + init()
 │       ├── anthropic/    # Anthropic (Claude) — custom Messages API
@@ -48,9 +48,74 @@ llmgate/
 
 | Protocol | Providers | Endpoint | Auth |
 |----------|-----------|----------|------|
-| OpenAI-compatible | baichuan, deepseek, doubao, ernie, glm, grok, groq, hunyuan, kimi, llama, mimo, minimax, mistral, openai, qwen, siliconflow, stepfun, together | `POST /chat/completions` | `Bearer {key}` |
+| OpenAI-compatible | azure, baichuan, cerebras, cloudflare, deepseek, doubao, ernie, glm, grok, groq, hunyuan, kimi, llama, mimo, minimax, mistral, nvidia, openai, perplexity, qwen, sensenova, siliconflow, spark, stepfun, together, yi | `POST /chat/completions` | `Bearer {key}` |
 | Anthropic Messages | anthropic | `POST /messages` | `x-api-key: {key}`, `anthropic-version` header |
 | Gemini generateContent | gemini | `POST /models/{model}:generateContent` | `x-goog-api-key: {key}` |
+
+---
+
+## Provider Coverage
+
+### Built-in Providers (26 OpenAI-compatible + 2 native)
+
+| Group | Providers | Count |
+|-------|-----------|-------|
+| **Global Cloud** | openai, azure, bedrock(planned), gemini, cloudflare | 4 |
+| **China Cloud** | qwen(阿里), doubao(字节), ernie(百度), hunyuan(腾讯), spark(讯飞), sensenova(商汤) | 6 |
+| **China AI Labs** | deepseek, glm(智谱), kimi(月之暗面), minimax, stepfun(阶跃星辰), baichuan(百川), yi(零一万物) | 7 |
+| **Global AI Labs** | anthropic, mistral, grok(xAI), perplexity | 4 |
+| **Inference Platforms** | groq, together, siliconflow, llama(Meta), mimo(小米), nvidia(NIM), cerebras | 7 |
+| **Generic** | openai-compat (user-defined via config) | 1 |
+
+### Env Var Reference
+
+| Provider | Env Var |
+|----------|---------|
+| azure | `AZURE_KEY` |
+| baichuan | `BAICHUAN_KEY` |
+| cerebras | `CEREBRAS_KEY` |
+| cloudflare | `CLOUDFLARE_KEY` |
+| deepseek | `DEEPSEEK_KEY` |
+| doubao | `DOUBAO_KEY` |
+| ernie | `ERNIE_KEY` |
+| gemini | `GEMINI_KEY` |
+| glm | `GLM_KEY` |
+| grok | `GROK_KEY` |
+| groq | `GROQ_KEY` |
+| hunyuan | `HUNYUAN_KEY` |
+| kimi | `KIMI_KEY` |
+| llama | `LLAMA_KEY` |
+| mimo | `MIMO_KEY` |
+| minimax | `MINIMAX_KEY` |
+| mistral | `MISTRAL_KEY` |
+| nvidia | `NVIDIA_KEY` |
+| openai | `OPENAI_KEY` |
+| perplexity | `PERPLEXITY_KEY` |
+| qwen | `QWEN_KEY` |
+| sensenova | `SENSENOVA_KEY` |
+| siliconflow | `SILICONFLOW_KEY` |
+| spark | `SPARK_KEY` |
+| stepfun | `STEPFUN_KEY` |
+| together | `TOGETHER_KEY` |
+| yi | `YI_KEY` |
+
+### Provider Roadmap
+
+| Provider | 平台 | 优先级 | 备注 |
+|----------|------|:---:|------|
+| **spark** | 讯飞星火 | ✅ done | OpenAI兼容 |
+| **sensenova** | 商汤日日新 | ✅ done | OpenAI兼容 |
+| **yi** | 零一万物 | ✅ done | OpenAI兼容 |
+| **perplexity** | Perplexity AI | ✅ done | 搜索增强, OpenAI兼容 |
+| **nvidia** | NVIDIA NIM | ✅ done | GPU生态, OpenAI兼容 |
+| **cerebras** | Cerebras | ✅ done | 最快推理, OpenAI兼容 |
+| **cloudflare** | Cloudflare Workers AI | ✅ done | 边缘推理, OpenAI兼容网关 |
+| **azure** | 微软 Foundry | ✅ done | OpenAI兼容, 需设base_url |
+| **huawei** | 华为云盘古 | 🔶 调研中 | 需确认API协议 |
+| **skywork** | 昆仑万维天工 | 🔶 调研中 | 需确认API地址 |
+| **bedrock** | AWS Bedrock | 🔷 规划中 | 需AWS SDK适配器 |
+| **oci** | Oracle Cloud | 🔷 规划中 | 需确认OpenAI兼容性 |
+| **watsonx** | IBM Cloud | 🔷 规划中 | 需确认API协议 |
 
 ---
 

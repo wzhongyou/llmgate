@@ -8,10 +8,19 @@ type providerDef struct {
 	defaultModel string
 	models       []string
 	envVar       string
+	authHeader   string // empty = "Authorization: Bearer {key}"; set to "api-key" etc.
 	bodyHook     func(map[string]interface{})
 }
 
 var builtins = []providerDef{
+	{
+		name:         "azure",
+		baseURL:      "https://PLACEHOLDER.openai.azure.com/openai/v1",
+		defaultModel: "gpt-5.5",
+		models:       []string{"gpt-5.5", "gpt-5.4", "gpt-5.4-mini", "gpt-5", "gpt-4o"},
+		envVar:       "AZURE_KEY",
+		authHeader:   "api-key",
+	},
 	{
 		name:         "baichuan",
 		baseURL:      "https://api.baichuan-ai.com/v1",
@@ -20,17 +29,31 @@ var builtins = []providerDef{
 		envVar:       "BAICHUAN_KEY",
 	},
 	{
+		name:         "cerebras",
+		baseURL:      "https://api.cerebras.ai/v1",
+		defaultModel: "gpt-oss-120b",
+		models:       []string{"gpt-oss-120b", "zai-glm-4.7"},
+		envVar:       "CEREBRAS_KEY",
+	},
+	{
+		name:         "cloudflare",
+		baseURL:      "https://gateway.ai.cloudflare.com/v1/PLACEHOLDER/PLACEHOLDER",
+		defaultModel: "@cf/zai-org/glm-5.2",
+		models:       []string{"@cf/zai-org/glm-5.2", "@cf/moonshotai/kimi-k2.6", "@cf/google/gemma-4-26b-a4b-it", "@cf/qwen/qwen3-30b-a3b-fp8"},
+		envVar:       "CLOUDFLARE_KEY",
+	},
+	{
 		name:         "deepseek",
 		baseURL:      "https://api.deepseek.com/v1",
-		defaultModel: "deepseek-v4-flash",
-		models:       []string{"deepseek-v4-flash", "deepseek-v4", "deepseek-v4-pro", "deepseek-r2"},
+		defaultModel: "deepseek-v4-pro",
+		models:       []string{"deepseek-v4-pro", "deepseek-v4-flash"},
 		envVar:       "DEEPSEEK_KEY",
 	},
 	{
 		name:         "doubao",
 		baseURL:      "https://ark.cn-beijing.volces.com/api/v3",
-		defaultModel: "doubao-seed-1.6-250615",
-		models:       []string{"doubao-seed-1.6-250615", "dola-seed-2.0-pro", "doubao-pro-32k", "doubao-lite-32k"},
+		defaultModel: "doubao-seed-2-0-pro-260215",
+		models:       []string{"doubao-seed-2-0-pro-260215", "doubao-seed-2-0-lite-260215", "doubao-seed-1-6-251015", "doubao-seed-1-6-flash-250828", "doubao-seed-1-6-lite-251015"},
 		envVar:       "DOUBAO_KEY",
 	},
 	{
@@ -43,16 +66,16 @@ var builtins = []providerDef{
 	{
 		name:         "glm",
 		baseURL:      "https://open.bigmodel.cn/api/paas/v4",
-		defaultModel: "glm-5.1",
-		models:       []string{"glm-5.1", "glm-5"},
+		defaultModel: "glm-5.2",
+		models:       []string{"glm-5.2", "glm-5.1", "glm-5"},
 		envVar:       "GLM_KEY",
 			bodyHook:     glmBodyHook,
 		},
 	{
 		name:         "grok",
 		baseURL:      "https://api.x.ai/v1",
-		defaultModel: "grok-4.1-fast-non-reasoning",
-		models:       []string{"grok-4.20-beta1", "grok-4.1", "grok-4.1-fast-non-reasoning"},
+		defaultModel: "grok-4.3",
+		models:       []string{"grok-4.3", "grok-4.20-0309-non-reasoning", "grok-4.1", "grok-code-fast-1"},
 		envVar:       "GROK_KEY",
 	},
 	{
@@ -73,7 +96,7 @@ var builtins = []providerDef{
 		name:         "kimi",
 		baseURL:      "https://api.moonshot.cn/v1",
 		defaultModel: "kimi-k2.6",
-		models:       []string{"kimi-k2.6", "moonshot-v1-8k"},
+		models:       []string{"kimi-k2.6", "moonshot-v1-8k", "moonshot-v1-32k", "moonshot-v1-128k"},
 		envVar:       "KIMI_KEY",
 	},
 	{
@@ -93,8 +116,8 @@ var builtins = []providerDef{
 	{
 		name:         "minimax",
 		baseURL:      "https://api.minimaxi.com/v1",
-		defaultModel: "MiniMax-M2.7",
-		models:       []string{"MiniMax-M2.7", "minimax-m3", "MiniMax-Text-01"},
+		defaultModel: "MiniMax-M3",
+		models:       []string{"MiniMax-M3", "MiniMax-M2.7", "MiniMax-M2.5"},
 		envVar:       "MINIMAX_KEY",
 	},
 	{
@@ -105,18 +128,39 @@ var builtins = []providerDef{
 		envVar:       "MISTRAL_KEY",
 	},
 	{
+		name:         "nvidia",
+		baseURL:      "https://integrate.api.nvidia.com/v1",
+		defaultModel: "nvidia/nemotron-3-super-120b-a12b",
+		models:       []string{"nvidia/nemotron-3-super-120b-a12b", "nvidia/llama-3.3-nemotron-super-49b-v1.5", "meta/llama-3.1-70b-instruct", "meta/llama-3.1-8b-instruct", "nvidia/nemotron-3-nano-30b-a3b"},
+		envVar:       "NVIDIA_KEY",
+	},
+	{
 		name:         "openai",
 		baseURL:      "https://api.openai.com/v1",
 		defaultModel: "gpt-5.5",
-		models:       []string{"gpt-5.5", "gpt-5.5-high", "gpt-5.5-instant", "gpt-4o"},
+		models:       []string{"gpt-5.5", "gpt-5.4-mini", "gpt-5-nano", "gpt-4o"},
 		envVar:       "OPENAI_KEY",
+	},
+	{
+		name:         "perplexity",
+		baseURL:      "https://api.perplexity.ai",
+		defaultModel: "sonar-pro",
+		models:       []string{"sonar-pro", "sonar", "sonar-reasoning-pro", "sonar-reasoning", "sonar-deep-research"},
+		envVar:       "PERPLEXITY_KEY",
 	},
 	{
 		name:         "qwen",
 		baseURL:      "https://dashscope.aliyuncs.com/compatible-mode/v1",
-		defaultModel: "qwen3.6-plus",
-		models:       []string{"qwen3.7-max-preview", "qwen3.6-plus", "qwen3.5-max-preview", "qwen-max"},
+		defaultModel: "qwen3.7-max",
+		models:       []string{"qwen3.7-max", "qwen3.6-plus", "qwen3.5-max-preview", "qwen-max"},
 		envVar:       "QWEN_KEY",
+	},
+	{
+		name:         "sensenova",
+		baseURL:      "https://api.sensenova.cn/v1",
+		defaultModel: "sensenova-6.7-flash-lite",
+		models:       []string{"sensenova-6.7-flash-lite", "sensenova-u1-fast"},
+		envVar:       "SENSENOVA_KEY",
 	},
 	{
 		name:         "siliconflow",
@@ -124,6 +168,13 @@ var builtins = []providerDef{
 		defaultModel: "Qwen/Qwen3-72B",
 		models:       []string{"Qwen/Qwen3-72B", "deepseek-ai/DeepSeek-R1"},
 		envVar:       "SILICONFLOW_KEY",
+	},
+	{
+		name:         "spark",
+		baseURL:      "https://spark-api-open.xf-yun.com/v1",
+		defaultModel: "spark-x2",
+		models:       []string{"spark-x2", "spark-x2-flash", "spark-ultra", "spark-pro", "spark-lite"},
+		envVar:       "SPARK_KEY",
 	},
 	{
 		name:         "stepfun",
@@ -138,6 +189,13 @@ var builtins = []providerDef{
 		defaultModel: "meta-llama/Llama-4-Maverick-17B-128E-Instruct-FP8",
 		models:       []string{"meta-llama/Llama-4-Maverick-17B-128E-Instruct-FP8", "meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo"},
 		envVar:       "TOGETHER_KEY",
+	},
+	{
+		name:         "yi",
+		baseURL:      "https://api.lingyiwanwu.com/v1",
+		defaultModel: "yi-lightning",
+		models:       []string{"yi-lightning", "yi-large", "yi-large-turbo", "yi-medium", "yi-vision", "yi-spark"},
+		envVar:       "YI_KEY",
 	},
 }
 
@@ -159,6 +217,7 @@ func init() {
 				baseURL:      baseURL,
 				defaultModel: defaultModel,
 				models:       d.models,
+				AuthHeader:   d.authHeader,
 				BodyHook:     d.bodyHook,
 			}, nil
 		})

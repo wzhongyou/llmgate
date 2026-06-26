@@ -6,25 +6,33 @@
 # Model can be specified at request time (req.Model) or configured per provider
 # below as default_model. If neither is set, each provider uses its built-in default:
 #   anthropic   -> claude-sonnet-4-6
+#   azure       -> gpt-5.5
 #   baichuan    -> Baichuan4
-#   deepseek    -> deepseek-v4-flash
-#   doubao      -> doubao-seed-1.6-250615
+#   cerebras    -> gpt-oss-120b
+#   cloudflare  -> @cf/zai-org/glm-5.2
+#   deepseek    -> deepseek-v4-pro
+#   doubao      -> doubao-seed-2-0-pro-260215
 #   ernie       -> ernie-5.1
 #   gemini      -> gemini-3.1-flash
-#   glm         -> glm-5.1
-#   grok        -> grok-4.1-fast-non-reasoning
+#   glm         -> glm-5.2
+#   grok        -> grok-4.3
 #   groq        -> meta-llama/llama-4-maverick-17b-128e
 #   hunyuan     -> hy3-preview
 #   kimi        -> kimi-k2.6
 #   llama       -> llama-4-maverick
 #   mimo        -> mimo-v2-pro
-#   minimax     -> MiniMax-M2.7
+#   minimax     -> MiniMax-M3
 #   mistral     -> mistral-large-latest
+#   nvidia      -> nvidia/nemotron-3-super-120b-a12b
 #   openai      -> gpt-5.5
-#   qwen        -> qwen3.6-plus
+#   perplexity  -> sonar-pro
+#   qwen        -> qwen3.7-max
+#   sensenova   -> sensenova-6.7-flash-lite
 #   siliconflow -> Qwen/Qwen3-72B
+#   spark       -> spark-x2
 #   stepfun     -> step-3.7-flash
 #   together    -> meta-llama/Llama-4-Maverick-17B-128E-Instruct-FP8
+#   yi          -> yi-lightning
 
 [[providers]]
 name = "anthropic"
@@ -32,9 +40,28 @@ key = "${ANTHROPIC_KEY}"
 # base_url = "https://api.anthropic.com/v1"
 
 [[providers]]
+name = "azure"
+key = "${AZURE_KEY}"
+# Azure requires base_url to match your deployed resource.
+# Format: https://<resource-name>.openai.azure.com/openai/v1
+# Also set default_model to the deployment name.
+# base_url = "https://my-resource.openai.azure.com/openai/v1"
+
+[[providers]]
 name = "baichuan"
 key = "${BAICHUAN_KEY}"
 # base_url = "https://api.baichuan-ai.com/v1"
+
+[[providers]]
+name = "cerebras"
+key = "${CEREBRAS_KEY}"
+# base_url = "https://api.cerebras.ai/v1"
+
+[[providers]]
+name = "cloudflare"
+key = "${CLOUDFLARE_KEY}"
+# Cloudflare AI Gateway requires base_url with account_id and gateway_id.
+# base_url = "https://gateway.ai.cloudflare.com/v1/<ACCOUNT_ID>/<GATEWAY_ID>"
 
 [[providers]]
 name = "deepseek"
@@ -103,9 +130,19 @@ key = "${MISTRAL_KEY}"
 # base_url = "https://api.mistral.ai/v1"
 
 [[providers]]
+name = "nvidia"
+key = "${NVIDIA_KEY}"
+# base_url = "https://integrate.api.nvidia.com/v1"
+
+[[providers]]
 name = "openai"
 key = "${OPENAI_KEY}"
 # base_url = "https://api.openai.com/v1"
+
+[[providers]]
+name = "perplexity"
+key = "${PERPLEXITY_KEY}"
+# base_url = "https://api.perplexity.ai"
 
 [[providers]]
 name = "qwen"
@@ -113,9 +150,19 @@ key = "${QWEN_KEY}"
 # base_url = "https://dashscope.aliyuncs.com/compatible-mode/v1"
 
 [[providers]]
+name = "sensenova"
+key = "${SENSENOVA_KEY}"
+# base_url = "https://api.sensenova.cn/v1"
+
+[[providers]]
 name = "siliconflow"
 key = "${SILICONFLOW_KEY}"
 # base_url = "https://api.siliconflow.cn/v1"
+
+[[providers]]
+name = "spark"
+key = "${SPARK_KEY}"
+# base_url = "https://spark-api-open.xf-yun.com/v1"
 
 [[providers]]
 name = "stepfun"
@@ -126,6 +173,11 @@ key = "${STEPFUN_KEY}"
 name = "together"
 key = "${TOGETHER_KEY}"
 # base_url = "https://api.together.xyz/v1"
+
+[[providers]]
+name = "yi"
+key = "${YI_KEY}"
+# base_url = "https://api.lingyiwanwu.com/v1"
 
 
 # Routing strategy: determines provider selection order (decorator chain)

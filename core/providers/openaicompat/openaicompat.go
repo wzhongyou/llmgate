@@ -20,6 +20,10 @@ type Provider struct {
 	models       []string
 	client       http.Client
 
+	// AuthHeader is the HTTP header name for the API key. Default is "Authorization" with "Bearer {key}" format.
+	// Set to "api-key" for providers that use raw key in a custom header (e.g. Azure).
+	AuthHeader string
+
 	// BodyHook mutates the request body map before JSON marshaling.
 	// Use for provider-specific adaptations like removing unsupported params.
 	BodyHook func(body map[string]interface{})
@@ -46,7 +50,11 @@ func (p *Provider) Chat(ctx context.Context, req *core.ChatRequest) (*core.ChatR
 	if err != nil {
 		return nil, &core.ProviderError{Provider: p.name, Message: err.Error(), Cause: err}
 	}
-	httpReq.Header.Set("Authorization", "Bearer "+p.key)
+	if p.AuthHeader != "" {
+		httpReq.Header.Set(p.AuthHeader, p.key)
+	} else {
+		httpReq.Header.Set("Authorization", "Bearer "+p.key)
+	}
 	httpReq.Header.Set("Content-Type", "application/json")
 
 	resp, err := p.client.Do(httpReq)
@@ -90,7 +98,11 @@ func (p *Provider) ChatStream(ctx context.Context, req *core.ChatRequest) (<-cha
 	if err != nil {
 		return nil, &core.ProviderError{Provider: p.name, Message: err.Error(), Cause: err}
 	}
-	httpReq.Header.Set("Authorization", "Bearer "+p.key)
+	if p.AuthHeader != "" {
+		httpReq.Header.Set(p.AuthHeader, p.key)
+	} else {
+		httpReq.Header.Set("Authorization", "Bearer "+p.key)
+	}
 	httpReq.Header.Set("Content-Type", "application/json")
 
 	resp, err := p.client.Do(httpReq)
@@ -222,7 +234,11 @@ func (p *Provider) Embed(ctx context.Context, req *core.EmbedRequest) (*core.Emb
 	if err != nil {
 		return nil, &core.ProviderError{Provider: p.name, Message: err.Error(), Cause: err}
 	}
-	httpReq.Header.Set("Authorization", "Bearer "+p.key)
+	if p.AuthHeader != "" {
+		httpReq.Header.Set(p.AuthHeader, p.key)
+	} else {
+		httpReq.Header.Set("Authorization", "Bearer "+p.key)
+	}
 	httpReq.Header.Set("Content-Type", "application/json")
 
 	resp, err := p.client.Do(httpReq)
